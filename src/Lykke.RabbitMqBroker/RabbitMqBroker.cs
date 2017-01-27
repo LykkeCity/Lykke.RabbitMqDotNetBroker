@@ -4,7 +4,6 @@ using Common;
 using Common.Log;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
-using Lykke.ProducerSubscriber;
 using System.Collections.Generic;
 using System.Linq;
 
