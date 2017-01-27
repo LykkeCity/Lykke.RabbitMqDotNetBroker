@@ -21,30 +21,24 @@ To Use as message consumer (message broker) - answer these questions:
  
  Example:
  ```csharp
-        public static void Main(string[] args)
+    public class HowToSubscribe
+    {
+        public static void Example(RabbitMqSettings settings)
         {
-            var rabbitMqSettings = new RabbitMqSettings
-            {
-                ConnectionString = "",
-                QueueName = ""
-            };
 
-            _connector = 
-                new RabbitMqBroker<string>(rabbitMqSettings)
+            var connector =
+                new RabbitMqSubscriber<string>(settings)
                   .SetMessageDeserializer(new TestMessageDeserializer())
                   .SetMessageReadStrategy(new MessageReadWithTemporaryQueueStrategy())
                   .Subscribe(HandleMessage)
                   .SetLogger(new LogToConsole())
                   .Start();
-
-            Console.WriteLine("Started");
-
-            Console.ReadLine();
         }
-        
+
         private static Task HandleMessage(string msg)
         {
             Console.WriteLine(msg);
             return Task.FromResult(0);
         }
+    }
 ```
