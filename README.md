@@ -14,7 +14,7 @@ To Use as message consumer (message broker) - answer these questions:
 
  - Which RabbitMQ server do you want to be connected using notation: https://www.rabbitmq.com/uri-spec.html 
  - How do you want deserealize array of bytes to your model: implement your IMessageDeserializer<TModel> interface and confugre it
- - Which RabbitMQ strategy do you want to use. Use whichever we already have or feel free to write your own IMessageReadStrategy and do pull request;
+ - Which RabbitMQ strategy do you want to use. Use whichever we already have or feel free to write your own IMessageReadStrategy and do pull request; https://www.rabbitmq.com/tutorials/tutorial-three-dotnet.html
  - Specify Lykke Logging system: ILog;
  - Specify callback method for messages to be delivered;
  - Run the Broker;
