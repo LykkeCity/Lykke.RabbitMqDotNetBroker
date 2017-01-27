@@ -1,7 +1,8 @@
 ﻿using Lykke.RabbitMqBroker;
 using System.Text;
+using Lykke.RabbitMqBroker.Subscriber;
 
-namespace TestInvoke
+namespace TestInvoke.SubscribeExample
 {
     public class TestMessageDeserializer : IMessageDeserializer<string>
     {

@@ -6,8 +6,9 @@ using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using System.Collections.Generic;
 using System.Linq;
+using Autofac;
 
-namespace Lykke.RabbitMqBroker
+namespace Lykke.RabbitMqBroker.Subscriber
 {
 
     public interface IMessageDeserializer<out TModel>
@@ -20,13 +21,8 @@ namespace Lykke.RabbitMqBroker
         string Configure(RabbitMqSettings settings, IModel channel);
     }
 
-    public class RabbitMqSettings{
-        public string ConnectionString { get; set; }
-        public string QueueName { get; set; }
 
-    }
-
-    public class RabbitMqBroker<TTopicModel> : IStarter, IMessageConsumer<TTopicModel>
+    public class RabbitMqSubscriber<TTopicModel> : IStartable, IMessageConsumer<TTopicModel>
     {
 
         private readonly List<Func<TTopicModel, Task>> _eventHandlers = new List<Func<TTopicModel, Task>>();
@@ -39,33 +35,33 @@ namespace Lykke.RabbitMqBroker
 
         private IMessageReadStrategy _messageReadStrategy;
 
-        public RabbitMqBroker(RabbitMqSettings rabbitMqSettings)
+        public RabbitMqSubscriber(RabbitMqSettings rabbitMqSettings)
         {
             _rabbitMqSettings = rabbitMqSettings;
         }
 
         #region Configurator
 
-        public RabbitMqBroker<TTopicModel> SetMessageDeserializer(
+        public RabbitMqSubscriber<TTopicModel> SetMessageDeserializer(
             IMessageDeserializer<TTopicModel> messageDeserializer)
         {
             _messageDeserializer = messageDeserializer;
             return this;
         }
 
-        public RabbitMqBroker<TTopicModel> Subscribe(Func<TTopicModel, Task> callback)
+        public RabbitMqSubscriber<TTopicModel> Subscribe(Func<TTopicModel, Task> callback)
         {
             _eventHandlers.Add(callback);
             return this;
         }
 
-        public RabbitMqBroker<TTopicModel> SetLogger(ILog log)
+        public RabbitMqSubscriber<TTopicModel> SetLogger(ILog log)
         {
             _log = log;
             return this;
         }
 
-        public RabbitMqBroker<TTopicModel> SetMessageReadStrategy(IMessageReadStrategy messageReadStrategy)
+        public RabbitMqSubscriber<TTopicModel> SetMessageReadStrategy(IMessageReadStrategy messageReadStrategy)
         {
             _messageReadStrategy = messageReadStrategy;
             return this;
@@ -143,12 +139,12 @@ namespace Lykke.RabbitMqBroker
 
         }
 
-        void IStarter.Start()
+        void IStartable.Start()
         {
             Start();
         }
 
-        public RabbitMqBroker<TTopicModel> Start()
+        public RabbitMqSubscriber<TTopicModel> Start()
         {
             if (_messageDeserializer == null)
                 throw new Exception("Please specify message deserializer");

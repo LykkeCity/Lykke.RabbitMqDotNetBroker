@@ -1,6 +1,6 @@
 ﻿using RabbitMQ.Client;
 
-namespace Lykke.RabbitMqBroker
+namespace Lykke.RabbitMqBroker.Subscriber
 {
     public class MessageReadWithTemporaryQueueStrategy : IMessageReadStrategy
     {

@@ -2,37 +2,30 @@
 using Lykke.RabbitMqBroker;
 using System;
 using System.Threading.Tasks;
+using Lykke.RabbitMqBroker.Subscriber;
+using TestInvoke.PublishExample;
+using TestInvoke.SubscribeExample;
 
 namespace TestInvoke
 {
     public class Program
     {
-        private static RabbitMqBroker<string> _connector;
 
         public static void Main(string[] args)
         {
             var rabbitMqSettings = new RabbitMqSettings
             {
-                ConnectionString = "",
-                QueueName = ""
+                QueueName = Environment.GetEnvironmentVariable("RabbitMqQueue"),
+                ConnectionString = Environment.GetEnvironmentVariable("RabbitMqConnectionString")
             };
 
-            _connector = 
-                new RabbitMqBroker<string>(rabbitMqSettings)
-                  .SetMessageDeserializer(new TestMessageDeserializer())
-                  .SetMessageReadStrategy(new MessageReadWithTemporaryQueueStrategy())
-                  .Subscribe(HandleMessage)
-                  .SetLogger(new LogToConsole())
-                  .Start();
+            HowToPublish.Example(rabbitMqSettings);
+            HowToSubscribe.Example(rabbitMqSettings);
 
-            Console.WriteLine("Started");
+            Console.WriteLine("Done");
 
             Console.ReadLine();
         }
-        private static Task HandleMessage(string msg)
-        {
-            Console.WriteLine(msg);
-            return Task.FromResult(0);
-        }
+
     }
 }

@@ -1,7 +1,6 @@
-﻿using System;
-using RabbitMQ.Client;
+﻿using RabbitMQ.Client;
 
-namespace Lykke.RabbitMqBroker
+namespace Lykke.RabbitMqBroker.Subscriber
 {
     public class MessageReadQueueStrategy : IMessageReadStrategy
     {
