@@ -41,4 +41,10 @@ To Use as message consumer (message broker) - answer these questions:
 
             Console.ReadLine();
         }
+        
+        private static Task HandleMessage(string msg)
+        {
+            Console.WriteLine(msg);
+            return Task.FromResult(0);
+        }
 ```
