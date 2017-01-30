@@ -18,6 +18,10 @@ namespace TestInvoke.PublishExample
                 = new RabbitMqPublisher<string>(rabbitMqSettings)
                 .SetSerializer(new TestMessageSerializer())
                 .Start();
+
+
+            for (var i = 0; i <= 10; i++)
+                connection.ProduceAsync("message#" + i);
         }
 
     }
