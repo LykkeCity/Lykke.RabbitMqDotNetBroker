@@ -33,13 +33,15 @@ namespace Lykke.RabbitMqBroker.Subscriber
         private IMessageDeserializer<TTopicModel> _messageDeserializer;
 
         private readonly RabbitMqSettings _rabbitMqSettings;
+        private readonly int _reconnectTimeOut;
 
 
         private IMessageReadStrategy _messageReadStrategy;
 
-        public RabbitMqSubscriber(RabbitMqSettings rabbitMqSettings)
+        public RabbitMqSubscriber(RabbitMqSettings rabbitMqSettings, int reconnectTimeOut = 3000)
         {
             _rabbitMqSettings = rabbitMqSettings;
+            _reconnectTimeOut = reconnectTimeOut;
         }
 
         #region Configurator
@@ -81,26 +83,25 @@ namespace Lykke.RabbitMqBroker.Subscriber
             return _thread == null;
         }
 
-        private async void ReadThread()
+        private void ReadThread()
         {
             while (!IsStopped())
                 try
                 {
-                    await ConnectAndReadAsync();
+                    ConnectAndReadAsync();
 
                 }
                 catch (Exception ex)
                 {
-                    if (_log != null)
-                      await _log.WriteFatalErrorAsync("RabbitMQ " + _rabbitMqSettings.QueueName, "ReadThread", "", ex);
+                    _log?.WriteFatalErrorAsync("RabbitMQ " + _rabbitMqSettings.QueueName, "ReadThread", "", ex).Wait();
                 }
                 finally
                 {
-                    await Task.Delay(3000);
+                    Thread.Sleep(_reconnectTimeOut);
                 }
         }
 
-        private async Task ConnectAndReadAsync()
+        private void ConnectAndReadAsync()
         {
             var factory = new ConnectionFactory {Uri = _rabbitMqSettings.ConnectionString};
 
@@ -109,22 +110,24 @@ namespace Lykke.RabbitMqBroker.Subscriber
             {
                 var queueName = _messageReadStrategy.Configure(_rabbitMqSettings, channel);
 
-                var consumer = new EventingBasicConsumer(channel);
-
-                consumer.Received += MessageReceived;
+                var consumer = new QueueingBasicConsumer(channel);
                 channel.BasicConsume(queueName, true, consumer);
 
-                while(connection.IsOpen || !IsStopped()){
-                    await Task.Delay(2000);
-                }
+                //consumer.Received += MessageReceived;
 
-                consumer.Received -= MessageReceived;
+                while (connection.IsOpen || !IsStopped())
+                {
+                    BasicDeliverEventArgs eventArgs;
+                    var delivered = consumer.Queue.Dequeue(2000, out eventArgs);
+                    if (delivered)
+                        MessageReceived(eventArgs);
+                }
 
                 connection.Close();
             }
         }
 
-        private void MessageReceived(object sender, BasicDeliverEventArgs basicDeliverEventArgs)
+        private void MessageReceived(BasicDeliverEventArgs basicDeliverEventArgs)
         {
 
             try
@@ -156,9 +159,10 @@ namespace Lykke.RabbitMqBroker.Subscriber
             if (_messageReadStrategy == null)
                 throw new Exception("Please specify message read strategy");
 
-            if (_thread == null)
-                _thread = new Thread(ReadThread);
+            if (_thread != null) return this;
 
+            _thread = new Thread(ReadThread);
+            _thread.Start();
             return this;
         }
 

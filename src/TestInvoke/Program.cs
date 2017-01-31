@@ -1,9 +1,5 @@
-﻿using Common.Log;
-using Lykke.RabbitMqBroker;
+﻿using Lykke.RabbitMqBroker;
 using System;
-using System.Threading.Tasks;
-using Lykke.RabbitMqBroker.Subscriber;
-using TestInvoke.PublishExample;
 using TestInvoke.SubscribeExample;
 
 namespace TestInvoke
@@ -19,13 +15,17 @@ namespace TestInvoke
                 ConnectionString = Environment.GetEnvironmentVariable("RabbitMqConnectionString")
             };
 
-            HowToPublish.Example(rabbitMqSettings);
             HowToSubscribe.Example(rabbitMqSettings);
 
-            Console.WriteLine("Done");
+            Console.WriteLine("Working... Press Enter to stop");
+            Console.ReadLine();
 
+            Console.WriteLine("Stopping....");
+            HowToSubscribe.Stop();
+            Console.WriteLine("Stopped");
             Console.ReadLine();
         }
+
 
     }
 }
