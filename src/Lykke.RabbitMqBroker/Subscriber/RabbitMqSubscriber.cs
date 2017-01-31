@@ -6,6 +6,7 @@ using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using Autofac;
 
 namespace Lykke.RabbitMqBroker.Subscriber
@@ -27,6 +28,7 @@ namespace Lykke.RabbitMqBroker.Subscriber
 
         private readonly List<Func<TTopicModel, Task>> _eventHandlers = new List<Func<TTopicModel, Task>>();
         private ILog _log;
+        private Thread _thread;
 
         private IMessageDeserializer<TTopicModel> _messageDeserializer;
 
@@ -74,10 +76,14 @@ namespace Lykke.RabbitMqBroker.Subscriber
             Subscribe(callback);
         }
 
+        private bool IsStopped()
+        {
+            return _thread == null;
+        }
+
         private async void ReadThread()
         {
-
-            while (true)
+            while (!IsStopped())
                 try
                 {
                     await ConnectAndReadAsync();
@@ -92,20 +98,15 @@ namespace Lykke.RabbitMqBroker.Subscriber
                 {
                     await Task.Delay(3000);
                 }
-
         }
-
-
 
         private async Task ConnectAndReadAsync()
         {
-
             var factory = new ConnectionFactory {Uri = _rabbitMqSettings.ConnectionString};
 
             using (var connection = factory.CreateConnection())
             using (var channel = connection.CreateModel())
             {
-
                 var queueName = _messageReadStrategy.Configure(_rabbitMqSettings, channel);
 
                 var consumer = new EventingBasicConsumer(channel);
@@ -113,7 +114,7 @@ namespace Lykke.RabbitMqBroker.Subscriber
                 consumer.Received += MessageReceived;
                 channel.BasicConsume(queueName, true, consumer);
 
-                while(connection.IsOpen){
+                while(connection.IsOpen || !IsStopped()){
                     await Task.Delay(2000);
                 }
 
@@ -155,10 +156,21 @@ namespace Lykke.RabbitMqBroker.Subscriber
             if (_messageReadStrategy == null)
                 throw new Exception("Please specify message read strategy");
 
-            ReadThread();
+            if (_thread == null)
+                _thread = new Thread(ReadThread);
+
             return this;
         }
 
-    }
+        public void Stop()
+        {
+            var thread = _thread;
 
+            if (thread == null)
+                return;
+
+            _thread = null;
+            thread.Join();
+        }
+    }
 }
