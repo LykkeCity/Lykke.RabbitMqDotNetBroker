@@ -110,18 +110,15 @@ namespace Lykke.RabbitMqBroker.Publisher
             }
 
             return default(TMessageModel);
-
         }
-
 
         private void ConnectAndRead()
         {
-            var factory = new ConnectionFactory() { Uri = _settings.ConnectionString };
+            var factory = new ConnectionFactory { Uri = _settings.ConnectionString };
 
             using (var connection = factory.CreateConnection())
             using (var channel = connection.CreateModel())
             {
-
                 _publishStrategy.Configure(_settings, channel);
 
                 while (true)
@@ -142,11 +139,8 @@ namespace Lykke.RabbitMqBroker.Publisher
 
                     var body = _serializer.Serialize(message);
                     _publishStrategy.Publish(_settings, channel, body);
-
-
                 }
             }
-
         }
 
         private void ConnectionThread()
@@ -163,6 +157,5 @@ namespace Lykke.RabbitMqBroker.Publisher
                 }
             }
         }
-
     }
 }
