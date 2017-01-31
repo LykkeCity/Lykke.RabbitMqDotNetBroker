@@ -27,6 +27,7 @@ namespace Lykke.RabbitMqBroker.Subscriber
 
         private readonly List<Func<TTopicModel, Task>> _eventHandlers = new List<Func<TTopicModel, Task>>();
         private ILog _log;
+        private bool _isRunning;
 
         private IMessageDeserializer<TTopicModel> _messageDeserializer;
 
@@ -77,7 +78,7 @@ namespace Lykke.RabbitMqBroker.Subscriber
         private async void ReadThread()
         {
 
-            while (true)
+            while (_isRunning)
                 try
                 {
                     await ConnectAndReadAsync();
@@ -113,7 +114,7 @@ namespace Lykke.RabbitMqBroker.Subscriber
                 consumer.Received += MessageReceived;
                 channel.BasicConsume(queueName, true, consumer);
 
-                while(connection.IsOpen){
+                while(connection.IsOpen || _isRunning){
                     await Task.Delay(2000);
                 }
 
@@ -155,7 +156,14 @@ namespace Lykke.RabbitMqBroker.Subscriber
             if (_messageReadStrategy == null)
                 throw new Exception("Please specify message read strategy");
 
+            _isRunning = true;
             ReadThread();
+            return this;
+        }
+
+        public RabbitMqSubscriber<TTopicModel> Stop()
+        {
+            _isRunning = false;
             return this;
         }
 
