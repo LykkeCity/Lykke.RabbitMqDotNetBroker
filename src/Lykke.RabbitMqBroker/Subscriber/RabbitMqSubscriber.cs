@@ -157,7 +157,10 @@ namespace Lykke.RabbitMqBroker.Subscriber
                 throw new Exception("Please specify message read strategy");
 
             if (_thread == null)
+            {
                 _thread = new Thread(ReadThread);
+                _thread.Start();
+            }
 
             return this;
         }
