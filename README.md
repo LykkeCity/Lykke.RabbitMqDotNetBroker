@@ -1,3 +1,9 @@
+[![Build status](https://ci.appveyor.com/api/projects/status/dco9jgns37uw87b1?svg=true)](https://ci.appveyor.com/project/lykke/lykke-rabbitmqdotnetbroker) - Last Build
+
+
+[![Build status](https://ci.appveyor.com/api/projects/status/dco9jgns37uw87b1/branch/master?svg=true)](https://ci.appveyor.com/project/lykke/lykke-rabbitmqdotnetbroker/branch/master) - Master
+
+
 # Lykke.RabbitMqDotNetBroker
 
 Use this library to communicate using abstraction Publisher/Subscriber via RabbitMQ.
