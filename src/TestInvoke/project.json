@@ -5,7 +5,7 @@
   },
 
   "dependencies": {
-    "Lykke.Common": "1.1.4",
+    "Lykke.Common": "1.1.7",
     "Lykke.RabbitMqBroker": "1.0.0-*",
     "Microsoft.NETCore.App": {
       "type": "platform",
