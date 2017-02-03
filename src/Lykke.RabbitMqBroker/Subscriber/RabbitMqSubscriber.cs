@@ -111,7 +111,7 @@ namespace Lykke.RabbitMqBroker.Subscriber
                 var queueName = _messageReadStrategy.Configure(_rabbitMqSettings, channel);
 
                 var consumer = new QueueingBasicConsumer(channel);
-                channel.BasicConsume(queueName, true, consumer);
+                string tag = channel.BasicConsume(queueName, true, consumer);
 
                 //consumer.Received += MessageReceived;
 
@@ -123,6 +123,7 @@ namespace Lykke.RabbitMqBroker.Subscriber
                         MessageReceived(eventArgs);
                 }
 
+                channel.BasicCancel(tag);
                 connection.Close();
             }
         }
