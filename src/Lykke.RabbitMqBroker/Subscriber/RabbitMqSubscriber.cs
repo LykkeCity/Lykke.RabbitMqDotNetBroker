@@ -115,7 +115,7 @@ namespace Lykke.RabbitMqBroker.Subscriber
 
                 //consumer.Received += MessageReceived;
 
-                while (connection.IsOpen || !IsStopped())
+                while (connection.IsOpen && !IsStopped())
                 {
                     BasicDeliverEventArgs eventArgs;
                     var delivered = consumer.Queue.Dequeue(2000, out eventArgs);
