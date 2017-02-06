@@ -69,7 +69,10 @@ namespace Lykke.RabbitMqBroker.Publisher
         public RabbitMqPublisher<TMessageModel> Start()
         {
             if (_thread == null)
+            {
                 _thread = new Thread(ConnectionThread);
+                _thread.Start();
+            }
 
             return this;
         }
@@ -106,7 +109,7 @@ namespace Lykke.RabbitMqBroker.Publisher
             lock (_items)
             {
                 if (_items.Count > 0)
-                    return _items.Peek();
+                    return _items.Dequeue();
             }
 
             return default(TMessageModel);
