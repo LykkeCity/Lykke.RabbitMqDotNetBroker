@@ -23,7 +23,7 @@ namespace Lykke.RabbitMqBroker.Subscriber
     }
 
 
-    public class RabbitMqSubscriber<TTopicModel> : IStartable, IMessageConsumer<TTopicModel>
+    public class RabbitMqSubscriber<TTopicModel> : IStartable, IStopable, IMessageConsumer<TTopicModel>
     {
 
         private readonly List<Func<TTopicModel, Task>> _eventHandlers = new List<Func<TTopicModel, Task>>();
@@ -165,6 +165,11 @@ namespace Lykke.RabbitMqBroker.Subscriber
             _thread = new Thread(ReadThread);
             _thread.Start();
             return this;
+        }
+
+        void IStopable.Stop()
+        {
+            Stop();
         }
 
         public void Stop()

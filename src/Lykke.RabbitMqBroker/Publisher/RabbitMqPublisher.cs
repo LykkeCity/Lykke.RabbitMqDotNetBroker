@@ -21,7 +21,7 @@ namespace Lykke.RabbitMqBroker.Publisher
         void Publish(RabbitMqSettings settings, IModel channel, byte[] data);
     }
 
-    public class RabbitMqPublisher<TMessageModel> : IMessageProducer<TMessageModel>, IStartable
+    public class RabbitMqPublisher<TMessageModel> : IMessageProducer<TMessageModel>, IStartable, IStopable
     {
         private readonly RabbitMqSettings _settings;
         private IRabbitMqSerializer<TMessageModel> _serializer;
@@ -82,7 +82,7 @@ namespace Lykke.RabbitMqBroker.Publisher
             Start();
         }
 
-        public void Stop()
+        void IStopable.Stop()
         {
             var thread = _thread;
 
