@@ -24,8 +24,11 @@ namespace Lykke.RabbitMqBroker.Publisher
     public class RabbitMqPublisher<TMessageModel> : IMessageProducer<TMessageModel>, IStartable, IStopable
     {
         private readonly RabbitMqSettings _settings;
+        private readonly Queue<TMessageModel> _items = new Queue<TMessageModel>();
+        private Thread _thread;
         private IRabbitMqSerializer<TMessageModel> _serializer;
         private ILog _log;
+        private IConsole _console;
         private IRabbitMqPublishStrategy _publishStrategy;
 
         public RabbitMqPublisher(RabbitMqSettings settings)
@@ -33,7 +36,7 @@ namespace Lykke.RabbitMqBroker.Publisher
             _settings = settings;
         }
 
-        #region MyRegion
+        #region Configurator
 
         public RabbitMqPublisher<TMessageModel> SetSerializer(IRabbitMqSerializer<TMessageModel> serializer)
         {
@@ -52,10 +55,14 @@ namespace Lykke.RabbitMqBroker.Publisher
             _log = log;
             return this;
         }
+
+        public RabbitMqPublisher<TMessageModel> SetConsole(IConsole console)
+        {
+            _console = console;
+            return this;
+        }
+
         #endregion
-
-
-        private readonly Queue<TMessageModel> _items = new Queue<TMessageModel>();
 
         public Task ProduceAsync(TMessageModel message)
         {
@@ -63,8 +70,6 @@ namespace Lykke.RabbitMqBroker.Publisher
                 _items.Enqueue(message);
             return Task.FromResult(0);
         }
-
-        private Thread _thread;
 
         public RabbitMqPublisher<TMessageModel> Start()
         {
@@ -119,22 +124,28 @@ namespace Lykke.RabbitMqBroker.Publisher
         {
             var factory = new ConnectionFactory { Uri = _settings.ConnectionString };
 
+            _console?.WriteLine($"Trying to connect to {_settings.ConnectionString} ({_settings.GetQueueOrExchangeName()}");
+
             using (var connection = factory.CreateConnection())
             using (var channel = connection.CreateModel())
             {
+                _console?.WriteLine($"Connected to {_settings.ConnectionString}");
                 _publishStrategy.Configure(_settings, channel);
 
                 while (true)
                 {
                     if (!connection.IsOpen)
-                        throw new Exception("Connection is closed");
+                        throw new Exception($"Connection to {_settings.ConnectionString} is closed");
 
                     var message = EnqueueMessage();
 
                     if (message == null)
                     {
                         if (IsStopped())
+                        {
+                            _console?.WriteLine($"{_settings.GetPublisherName()} is stopped");
                             return;
+                        }
 
                         Thread.Sleep(300);
                         continue;
@@ -156,7 +167,8 @@ namespace Lykke.RabbitMqBroker.Publisher
                 }
                 catch (Exception e)
                 {
-                    _log?.WriteErrorAsync("QueueProducer " + _settings.QueueName, "ConnectionThread", "", e).Wait();
+                    _console?.WriteLine($"{_settings.GetPublisherName()} error: {e.Message}");
+                    _log?.WriteErrorAsync(_settings.GetPublisherName(), "ConnectionThread", "", e).Wait();
                 }
             }
         }
