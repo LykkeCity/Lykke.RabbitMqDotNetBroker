@@ -92,8 +92,8 @@ namespace Lykke.RabbitMqBroker.Subscriber
                 }
                 catch (Exception ex)
                 {
-                    _console?.WriteLine($"{BrokerUtils.GetSubscriberName(_rabbitMqSettings.QueueName)} error: {ex.Message}");
-                    _log?.WriteFatalErrorAsync(BrokerUtils.GetSubscriberName(_rabbitMqSettings.QueueName), "ReadThread", "", ex).Wait();
+                    _console?.WriteLine($"{_rabbitMqSettings.GetSubscriberName()} error: {ex.Message}");
+                    _log?.WriteFatalErrorAsync(_rabbitMqSettings.GetSubscriberName(), "ReadThread", "", ex).Wait();
                 }
                 finally
                 {
@@ -104,7 +104,7 @@ namespace Lykke.RabbitMqBroker.Subscriber
         private void ConnectAndReadAsync()
         {
             var factory = new ConnectionFactory {Uri = _rabbitMqSettings.ConnectionString};
-            _console?.WriteLine($"Trying to connect to {_rabbitMqSettings.ConnectionString} ({BrokerUtils.GetQueueOrExchangeName(_rabbitMqSettings.ExchangeName, _rabbitMqSettings.QueueName)})");
+            _console?.WriteLine($"Trying to connect to {_rabbitMqSettings.ConnectionString} ({_rabbitMqSettings.GetQueueOrExchangeName()})");
 
             using (var connection = factory.CreateConnection())
             using (var channel = connection.CreateModel())
@@ -143,8 +143,8 @@ namespace Lykke.RabbitMqBroker.Subscriber
             }
             catch (Exception ex)
             {
-                _console?.WriteLine($"{BrokerUtils.GetSubscriberName(_rabbitMqSettings.QueueName)} error on MessageReceived: {ex.Message}");
-                _log?.WriteErrorAsync(BrokerUtils.GetSubscriberName(_rabbitMqSettings.QueueName), "Message Recieveing", "", ex);
+                _console?.WriteLine($"{_rabbitMqSettings.GetSubscriberName()} error on MessageReceived: {ex.Message}");
+                _log?.WriteErrorAsync(_rabbitMqSettings.GetSubscriberName(), "Message Recieveing", "", ex);
             }
 
         }
