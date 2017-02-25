@@ -124,7 +124,7 @@ namespace Lykke.RabbitMqBroker.Publisher
         {
             var factory = new ConnectionFactory { Uri = _settings.ConnectionString };
 
-            _console?.WriteLine($"Trying to connect to {_settings.ConnectionString} ({(!string.IsNullOrEmpty(_settings.ExchangeName) ? $"Exchange: {_settings.ExchangeName}" : string.Empty)}, Queue: {_settings.QueueName})");
+            _console?.WriteLine($"Trying to connect to {_settings.ConnectionString} ({BrokerUtils.GetQueueOrExchangeName(_settings.ExchangeName, _settings.QueueName)})");
 
             using (var connection = factory.CreateConnection())
             using (var channel = connection.CreateModel())
@@ -143,7 +143,7 @@ namespace Lykke.RabbitMqBroker.Publisher
                     {
                         if (IsStopped())
                         {
-                            _console?.WriteLine($"QueueProducer {_settings.QueueName} is stopped");
+                            _console?.WriteLine($"{BrokerUtils.GetPublisherName(_settings.QueueName)} is stopped");
                             return;
                         }
 
@@ -167,8 +167,8 @@ namespace Lykke.RabbitMqBroker.Publisher
                 }
                 catch (Exception e)
                 {
-                    _console?.WriteLine($"QueueProducer {_settings.QueueName} error: {e.Message}");
-                    _log?.WriteErrorAsync("QueueProducer " + _settings.QueueName, "ConnectionThread", "", e).Wait();
+                    _console?.WriteLine($"{BrokerUtils.GetPublisherName(_settings.QueueName)} error: {e.Message}");
+                    _log?.WriteErrorAsync(BrokerUtils.GetPublisherName(_settings.QueueName), "ConnectionThread", "", e).Wait();
                 }
             }
         }

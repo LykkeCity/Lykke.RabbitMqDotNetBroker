@@ -11,7 +11,6 @@ using Autofac;
 
 namespace Lykke.RabbitMqBroker.Subscriber
 {
-
     public interface IMessageDeserializer<out TModel>
     {
         TModel Deserialize(byte[] data);
@@ -21,7 +20,6 @@ namespace Lykke.RabbitMqBroker.Subscriber
     {
         string Configure(RabbitMqSettings settings, IModel channel);
     }
-
 
     public class RabbitMqSubscriber<TTopicModel> : IStartable, IStopable, IMessageConsumer<TTopicModel>
     {
@@ -94,8 +92,8 @@ namespace Lykke.RabbitMqBroker.Subscriber
                 }
                 catch (Exception ex)
                 {
-                    _console?.WriteLine($"RabbitMQ {_rabbitMqSettings.QueueName} error: {ex.Message}");
-                    _log?.WriteFatalErrorAsync("RabbitMQ " + _rabbitMqSettings.QueueName, "ReadThread", "", ex).Wait();
+                    _console?.WriteLine($"{BrokerUtils.GetSubscriberName(_rabbitMqSettings.QueueName)} error: {ex.Message}");
+                    _log?.WriteFatalErrorAsync(BrokerUtils.GetSubscriberName(_rabbitMqSettings.QueueName), "ReadThread", "", ex).Wait();
                 }
                 finally
                 {
@@ -106,7 +104,7 @@ namespace Lykke.RabbitMqBroker.Subscriber
         private void ConnectAndReadAsync()
         {
             var factory = new ConnectionFactory {Uri = _rabbitMqSettings.ConnectionString};
-            _console?.WriteLine($"Trying to connect to {_rabbitMqSettings.ConnectionString} ({(!string.IsNullOrEmpty(_rabbitMqSettings.ExchangeName) ? $"Exchange: {_rabbitMqSettings.ExchangeName}" : string.Empty)}, Queue: {_rabbitMqSettings.QueueName})");
+            _console?.WriteLine($"Trying to connect to {_rabbitMqSettings.ConnectionString} ({BrokerUtils.GetQueueOrExchangeName(_rabbitMqSettings.ExchangeName, _rabbitMqSettings.QueueName)})");
 
             using (var connection = factory.CreateConnection())
             using (var channel = connection.CreateModel())
@@ -145,8 +143,8 @@ namespace Lykke.RabbitMqBroker.Subscriber
             }
             catch (Exception ex)
             {
-                _console?.WriteLine($"RabbitMQ {_rabbitMqSettings.QueueName} error on MessageReceived: {ex.Message}");
-                _log?.WriteErrorAsync("RabbitMQ " + _rabbitMqSettings.QueueName, "Message Recieveing", "", ex);
+                _console?.WriteLine($"{BrokerUtils.GetSubscriberName(_rabbitMqSettings.QueueName)} error on MessageReceived: {ex.Message}");
+                _log?.WriteErrorAsync(BrokerUtils.GetSubscriberName(_rabbitMqSettings.QueueName), "Message Recieveing", "", ex);
             }
 
         }
