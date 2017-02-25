@@ -2,7 +2,7 @@
   "version": "1.0.0-*",
 
   "dependencies": {
-    "Lykke.Common": "1.1.9",
+    "Lykke.Common": "1.1.26",
     "Microsoft.NETCore.App": {
       "type": "platform",
       "version": "1.1.0"
