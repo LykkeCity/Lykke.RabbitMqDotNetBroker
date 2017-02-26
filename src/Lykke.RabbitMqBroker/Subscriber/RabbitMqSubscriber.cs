@@ -109,7 +109,7 @@ namespace Lykke.RabbitMqBroker.Subscriber
             using (var connection = factory.CreateConnection())
             using (var channel = connection.CreateModel())
             {
-                _console?.WriteLine($"Connected to {_rabbitMqSettings.ConnectionString}");
+                _console?.WriteLine($"Connected to {_rabbitMqSettings.ConnectionString} ({_rabbitMqSettings.GetQueueOrExchangeName()})");
 
                 var queueName = _messageReadStrategy.Configure(_rabbitMqSettings, channel);
 
