@@ -92,7 +92,7 @@ namespace Lykke.RabbitMqBroker.Subscriber
                 }
                 catch (Exception ex)
                 {
-                    _console?.WriteLine($"{_rabbitMqSettings.GetSubscriberName()} error: {ex.Message}");
+                    _console?.WriteLine($"{_rabbitMqSettings.GetSubscriberName()}: ERROR: {ex.Message}");
                     _log?.WriteFatalErrorAsync(_rabbitMqSettings.GetSubscriberName(), "ReadThread", "", ex).Wait();
                 }
                 finally
@@ -104,12 +104,12 @@ namespace Lykke.RabbitMqBroker.Subscriber
         private void ConnectAndReadAsync()
         {
             var factory = new ConnectionFactory {Uri = _rabbitMqSettings.ConnectionString};
-            _console?.WriteLine($"Trying to connect to {_rabbitMqSettings.ConnectionString} ({_rabbitMqSettings.GetQueueOrExchangeName()})");
+            _console?.WriteLine($"{_rabbitMqSettings.GetSubscriberName()}: trying to connect to {_rabbitMqSettings.ConnectionString} ({_rabbitMqSettings.GetQueueOrExchangeName()})");
 
             using (var connection = factory.CreateConnection())
             using (var channel = connection.CreateModel())
             {
-                _console?.WriteLine($"Connected to {_rabbitMqSettings.ConnectionString} ({_rabbitMqSettings.GetQueueOrExchangeName()})");
+                _console?.WriteLine($"{_rabbitMqSettings.GetSubscriberName()}:  connected to {_rabbitMqSettings.ConnectionString} ({_rabbitMqSettings.GetQueueOrExchangeName()})");
 
                 var queueName = _messageReadStrategy.Configure(_rabbitMqSettings, channel);
 
@@ -129,7 +129,7 @@ namespace Lykke.RabbitMqBroker.Subscriber
                 channel.BasicCancel(tag);
                 connection.Close();
 
-                _console?.WriteLine($"Coonection to {_rabbitMqSettings.ConnectionString} closed");
+                _console?.WriteLine($"{_rabbitMqSettings.GetSubscriberName()}: connection to {_rabbitMqSettings.ConnectionString} closed");
             }
         }
 
@@ -143,7 +143,7 @@ namespace Lykke.RabbitMqBroker.Subscriber
             }
             catch (Exception ex)
             {
-                _console?.WriteLine($"{_rabbitMqSettings.GetSubscriberName()} error on MessageReceived: {ex.Message}");
+                _console?.WriteLine($"{_rabbitMqSettings.GetSubscriberName()}: ERROR on MessageReceived: {ex.Message}");
                 _log?.WriteErrorAsync(_rabbitMqSettings.GetSubscriberName(), "Message Recieveing", "", ex);
             }
 

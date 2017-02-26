@@ -124,18 +124,18 @@ namespace Lykke.RabbitMqBroker.Publisher
         {
             var factory = new ConnectionFactory { Uri = _settings.ConnectionString };
 
-            _console?.WriteLine($"Trying to connect to {_settings.ConnectionString} ({_settings.GetQueueOrExchangeName()}");
+            _console?.WriteLine($"{_settings.GetPublisherName()}: trying to connect to {_settings.ConnectionString} ({_settings.GetQueueOrExchangeName()})");
 
             using (var connection = factory.CreateConnection())
             using (var channel = connection.CreateModel())
             {
-                _console?.WriteLine($"Connected to {_settings.ConnectionString}");
+                _console?.WriteLine($"{_settings.GetPublisherName()}: connected to {_settings.ConnectionString} ({_settings.GetQueueOrExchangeName()})");
                 _publishStrategy.Configure(_settings, channel);
 
                 while (true)
                 {
                     if (!connection.IsOpen)
-                        throw new Exception($"Connection to {_settings.ConnectionString} is closed");
+                        throw new Exception($"{_settings.GetPublisherName()}: connection to {_settings.ConnectionString} is closed");
 
                     var message = EnqueueMessage();
 
@@ -143,7 +143,7 @@ namespace Lykke.RabbitMqBroker.Publisher
                     {
                         if (IsStopped())
                         {
-                            _console?.WriteLine($"{_settings.GetPublisherName()} is stopped");
+                            _console?.WriteLine($"{_settings.GetPublisherName()}: {_settings.GetPublisherName()} is stopped");
                             return;
                         }
 
@@ -167,7 +167,7 @@ namespace Lykke.RabbitMqBroker.Publisher
                 }
                 catch (Exception e)
                 {
-                    _console?.WriteLine($"{_settings.GetPublisherName()} error: {e.Message}");
+                    _console?.WriteLine($"{_settings.GetPublisherName()}: ERROR: {e.Message}");
                     _log?.WriteErrorAsync(_settings.GetPublisherName(), "ConnectionThread", "", e).Wait();
                 }
             }
