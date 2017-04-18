@@ -11,16 +11,20 @@ namespace Lykke.RabbitMqBroker.Subscriber
             _routingKey = routingKey;
         }
 
-        public string Configure(RabbitMqSettings settings, IModel channel)
+        public string Configure(RabbitMqSubscriberSettings settings, IModel channel)
         {
-            var queueName = channel.QueueDeclare().QueueName;
+
+            if (settings.QueueName == null)
+                settings.QueueName = channel.QueueDeclare(settings.QueueName, settings.IsDurable).QueueName;
 
             channel.QueueBind(
-                queue: queueName,
-                exchange: settings.QueueName,
+                queue: settings.QueueName,
+                exchange: settings.ExchangeName,
                 routingKey: _routingKey);
 
-            return queueName;
+            return settings.QueueName;
         }
+
     }
+
 }

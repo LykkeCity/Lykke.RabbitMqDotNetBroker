@@ -1,21 +1,15 @@
-﻿using System;
-using Lykke.RabbitMqBroker;
-using Lykke.RabbitMqBroker.Publisher;
+﻿using Lykke.RabbitMqBroker.Publisher;
 
 namespace TestInvoke.PublishExample
 {
     public static class HowToPublish
     {
-        public static void Example(RabbitMqSettings settings)
+        public static void Example(RabbitMqPublisherSettings settings)
         {
-            var rabbitMqSettings = new RabbitMqSettings
-            {
-                ConnectionString = "",
-                QueueName = ""
-            };
+
 
             var connection
-                = new RabbitMqPublisher<string>(rabbitMqSettings)
+                = new RabbitMqPublisher<string>(settings)
                 .SetSerializer(new TestMessageSerializer())
                 .Start();
 

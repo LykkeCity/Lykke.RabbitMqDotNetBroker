@@ -14,14 +14,14 @@ namespace Lykke.RabbitMqBroker.Publisher
             _durable = durable;
         }
 
-        public void Configure(RabbitMqSettings settings, IModel channel)
+        public void Configure(RabbitMqPublisherSettings settings, IModel channel)
         {
-            channel.ExchangeDeclare(exchange: settings.QueueName, type: "fanout", durable: _durable);
+            channel.ExchangeDeclare(exchange: settings.ExchangeName, type: "fanout", durable: _durable);
         }
 
-        public void Publish(RabbitMqSettings settings, IModel channel, byte[] body)
+        public void Publish(RabbitMqPublisherSettings settings, IModel channel, byte[] body)
         {
-            channel.BasicPublish(exchange: settings.QueueName,
+            channel.BasicPublish(exchange: settings.ExchangeName,
                       routingKey: _routingKey,
                       basicProperties: null,
                       body: body);

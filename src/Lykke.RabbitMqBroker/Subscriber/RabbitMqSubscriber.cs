@@ -18,13 +18,13 @@ namespace Lykke.RabbitMqBroker.Subscriber
 
     public interface IMessageReadStrategy
     {
-        string Configure(RabbitMqSettings settings, IModel channel);
+        string Configure(RabbitMqSubscriberSettings settings, IModel channel);
     }
 
     public class RabbitMqSubscriber<TTopicModel> : IStartable, IStopable, IMessageConsumer<TTopicModel>
     {
         private readonly List<Func<TTopicModel, Task>> _eventHandlers = new List<Func<TTopicModel, Task>>();
-        private readonly RabbitMqSettings _rabbitMqSettings;
+        private readonly RabbitMqSubscriberSettings _rabbitMqSettings;
         private readonly int _reconnectTimeOut;
         private ILog _log;
         private Thread _thread;
@@ -32,7 +32,7 @@ namespace Lykke.RabbitMqBroker.Subscriber
         private IMessageReadStrategy _messageReadStrategy;
         private IConsole _console;
 
-        public RabbitMqSubscriber(RabbitMqSettings rabbitMqSettings, int reconnectTimeOut = 3000)
+        public RabbitMqSubscriber(RabbitMqSubscriberSettings rabbitMqSettings, int reconnectTimeOut = 3000)
         {
             _rabbitMqSettings = rabbitMqSettings;
             _reconnectTimeOut = reconnectTimeOut;
@@ -68,6 +68,12 @@ namespace Lykke.RabbitMqBroker.Subscriber
         public RabbitMqSubscriber<TTopicModel> SetMessageReadStrategy(IMessageReadStrategy messageReadStrategy)
         {
             _messageReadStrategy = messageReadStrategy;
+            return this;
+        }
+
+        public RabbitMqSubscriber<TTopicModel> CreateDefaultBind()
+        {
+            SetMessageReadStrategy(new MessageReadWithTemporaryQueueStrategy());
             return this;
         }
 

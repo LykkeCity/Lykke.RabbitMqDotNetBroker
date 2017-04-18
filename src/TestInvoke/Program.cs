@@ -1,5 +1,5 @@
-﻿using Lykke.RabbitMqBroker;
-using System;
+﻿using System;
+using Lykke.RabbitMqBroker.Subscriber;
 using TestInvoke.SubscribeExample;
 
 namespace TestInvoke
@@ -9,7 +9,7 @@ namespace TestInvoke
 
         public static void Main(string[] args)
         {
-            var rabbitMqSettings = new RabbitMqSettings
+            var rabbitMqSettings = new RabbitMqSubscriberSettings
             {
                 QueueName = Environment.GetEnvironmentVariable("RabbitMqQueue"),
                 ConnectionString = Environment.GetEnvironmentVariable("RabbitMqConnectionString")
