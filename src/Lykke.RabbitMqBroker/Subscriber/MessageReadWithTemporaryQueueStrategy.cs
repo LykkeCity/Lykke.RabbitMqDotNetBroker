@@ -1,4 +1,5 @@
-﻿using RabbitMQ.Client;
+﻿using System;
+using RabbitMQ.Client;
 
 namespace Lykke.RabbitMqBroker.Subscriber
 {
@@ -13,9 +14,15 @@ namespace Lykke.RabbitMqBroker.Subscriber
 
         public string Configure(RabbitMqSubscriberSettings settings, IModel channel)
         {
+            // If specified queue name is empty generate random name
+            var queueName = String.IsNullOrEmpty(settings.QueueName) 
+                ? settings.ExchangeName + "." + Guid.NewGuid().ToString() 
+                : settings.QueueName;
 
-            if (settings.QueueName == null)
-                settings.QueueName = channel.QueueDeclare(settings.QueueName, settings.IsDurable).QueueName;
+            // For random name set autodelete
+            var autodelete = String.IsNullOrEmpty(settings.QueueName) ? true : false;
+
+            settings.QueueName = channel.QueueDeclare(queueName, durable: settings.IsDurable, exclusive: false, autoDelete: autodelete).QueueName;
 
             channel.QueueBind(
                 queue: settings.QueueName,
