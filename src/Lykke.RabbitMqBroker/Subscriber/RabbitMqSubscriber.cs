@@ -71,7 +71,7 @@ namespace Lykke.RabbitMqBroker.Subscriber
             return this;
         }
 
-        public RabbitMqSubscriber<TTopicModel> CreateDefaultBind()
+        public RabbitMqSubscriber<TTopicModel> CreateDefaultBinding()
         {
             SetMessageReadStrategy(new MessageReadWithTemporaryQueueStrategy());
             return this;
@@ -169,7 +169,7 @@ namespace Lykke.RabbitMqBroker.Subscriber
                 throw new Exception("Please specify message handler");
 
             if (_messageReadStrategy == null)
-                throw new Exception("Please specify message read strategy");
+                CreateDefaultBinding();
 
             if (_thread != null) return this;
 
