@@ -20,7 +20,10 @@ namespace Lykke.RabbitMqBroker.Subscriber
                 : settings.QueueName;
 
             // For random name set autodelete
-            var autodelete = String.IsNullOrEmpty(settings.QueueName) ? true : false;
+            //var autodelete = String.IsNullOrEmpty(settings.QueueName) ? true : false;
+
+            // autodelete is always reverse from isdurable
+            var autodelete = !settings.IsDurable;
 
             settings.QueueName = channel.QueueDeclare(queueName, durable: settings.IsDurable, exclusive: false, autoDelete: autodelete).QueueName;
 
