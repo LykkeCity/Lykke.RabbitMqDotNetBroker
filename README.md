@@ -4,6 +4,9 @@
 [![Build status](https://ci.appveyor.com/api/projects/status/dco9jgns37uw87b1/branch/master?svg=true)](https://ci.appveyor.com/project/lykke/lykke-rabbitmqdotnetbroker/branch/master) - Master
 
 
+Nuget: https://www.nuget.org/packages/Lykke.RabbitMqBroker/
+
+
 # Lykke.RabbitMqDotNetBroker
 
 Use this library to communicate using abstraction Publisher/Subscriber via RabbitMQ.
