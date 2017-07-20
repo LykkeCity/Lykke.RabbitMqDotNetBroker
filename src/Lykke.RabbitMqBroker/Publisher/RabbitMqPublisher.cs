@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Autofac;
 using Common;
 using Common.Log;
+using Lykke.RabbitMqBroker.Subscriber;
 using RabbitMQ.Client;
 
 namespace Lykke.RabbitMqBroker.Publisher
@@ -17,13 +18,13 @@ namespace Lykke.RabbitMqBroker.Publisher
 
     public interface IRabbitMqPublishStrategy
     {
-        void Configure(RabbitMqPublisherSettings settings, IModel channel);
-        void Publish(RabbitMqPublisherSettings settings, IModel channel, byte[] data);
+        void Configure(RabbitMqSubscribtionSettings settings, IModel channel);
+        void Publish(RabbitMqSubscribtionSettings settings, IModel channel, byte[] data);
     }
 
     public class RabbitMqPublisher<TMessageModel> : IMessageProducer<TMessageModel>, IStartable, IStopable
     {
-        private readonly RabbitMqPublisherSettings _settings;
+        private readonly RabbitMqSubscribtionSettings _settings;
         private readonly Queue<TMessageModel> _items = new Queue<TMessageModel>();
         private Thread _thread;
         private IRabbitMqSerializer<TMessageModel> _serializer;
@@ -31,7 +32,7 @@ namespace Lykke.RabbitMqBroker.Publisher
         private IConsole _console;
         private IRabbitMqPublishStrategy _publishStrategy;
 
-        public RabbitMqPublisher(RabbitMqPublisherSettings settings)
+        public RabbitMqPublisher(RabbitMqSubscribtionSettings settings)
         {
             _settings = settings;
         }
@@ -98,7 +99,7 @@ namespace Lykke.RabbitMqBroker.Publisher
                 throw new Exception("RabbitMQPublisher serializer is not specified");
 
             if (_publishStrategy == null)
-                _publishStrategy = new DefaultFnoutPublishStrategy();
+                _publishStrategy = new DefaultFanoutPublishStrategy();
 
             _thread = null;
             thread.Join();
@@ -120,7 +121,7 @@ namespace Lykke.RabbitMqBroker.Publisher
             return default(TMessageModel);
         }
 
-        private void ConnectAndRead()
+        private void ConnectAndWrite()
         {
             var factory = new ConnectionFactory { Uri = _settings.ConnectionString };
 
@@ -163,7 +164,7 @@ namespace Lykke.RabbitMqBroker.Publisher
             {
                 try
                 {
-                    ConnectAndRead();
+                    ConnectAndWrite();
                 }
                 catch (Exception e)
                 {

@@ -1,18 +1,19 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.26430.16
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{CC53CCE3-238A-43B8-B1C1-49068E4CFF87}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{EA113A80-72C4-4F51-8708-9AAA6597E06A}"
-	ProjectSection(SolutionItems) = preProject
-		global.json = global.json
-	EndProjectSection
 EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Lykke.RabbitMqBroker", "src\Lykke.RabbitMqBroker\Lykke.RabbitMqBroker.xproj", "{D1590716-7628-4377-95BC-227A4C23115D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Lykke.RabbitMqBroker", "src\Lykke.RabbitMqBroker\Lykke.RabbitMqBroker.csproj", "{D1590716-7628-4377-95BC-227A4C23115D}"
 EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "TestInvoke", "src\TestInvoke\TestInvoke.xproj", "{2D0D1D77-A5B8-4F2B-B526-D3B8EE7048AC}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestInvoke", "src\TestInvoke\TestInvoke.csproj", "{2D0D1D77-A5B8-4F2B-B526-D3B8EE7048AC}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{7DA224A2-9CA2-44A8-9D8C-53C8BCF2580A}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RabbitMqBrokerTests", "tests\RabbitMqBrokerTests.csproj", "{FC96342D-3EA6-44D2-A62C-06019661FC54}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -28,6 +29,10 @@ Global
 		{2D0D1D77-A5B8-4F2B-B526-D3B8EE7048AC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2D0D1D77-A5B8-4F2B-B526-D3B8EE7048AC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2D0D1D77-A5B8-4F2B-B526-D3B8EE7048AC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FC96342D-3EA6-44D2-A62C-06019661FC54}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FC96342D-3EA6-44D2-A62C-06019661FC54}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FC96342D-3EA6-44D2-A62C-06019661FC54}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FC96342D-3EA6-44D2-A62C-06019661FC54}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -35,5 +40,6 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{D1590716-7628-4377-95BC-227A4C23115D} = {CC53CCE3-238A-43B8-B1C1-49068E4CFF87}
 		{2D0D1D77-A5B8-4F2B-B526-D3B8EE7048AC} = {CC53CCE3-238A-43B8-B1C1-49068E4CFF87}
+		{FC96342D-3EA6-44D2-A62C-06019661FC54} = {7DA224A2-9CA2-44A8-9D8C-53C8BCF2580A}
 	EndGlobalSection
 EndGlobal

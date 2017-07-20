@@ -4,7 +4,7 @@ namespace Lykke.RabbitMqBroker.Subscriber
 {
     public class MessageReadQueueStrategy : IMessageReadStrategy
     {
-        public string Configure(RabbitMqSubscriberSettings settings, IModel channel)
+        public string Configure(RabbitMqSubscribtionSettings settings, IModel channel)
         {
             return settings.QueueName;
         }

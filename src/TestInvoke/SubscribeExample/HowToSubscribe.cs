@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 using Common.Log;
+using Lykke.RabbitMqBroker;
 using Lykke.RabbitMqBroker.Subscriber;
 
 namespace TestInvoke.SubscribeExample
@@ -8,15 +9,16 @@ namespace TestInvoke.SubscribeExample
     public class HowToSubscribe
     {
         private static RabbitMqSubscriber<string> _connector;
-        public static void Example(RabbitMqSubscriberSettings settings)
+        public static void Example(RabbitMqSubscribtionSettings settings)
         {
+            var looger = new LogToConsole();
 
             _connector =
-                new RabbitMqSubscriber<string>(settings)
+                new RabbitMqSubscriber<string>(settings, new DefaultErrorHandlingStrategy(looger, settings))
                   .SetMessageDeserializer(new TestMessageDeserializer())
                   .SetMessageReadStrategy(new MessageReadWithTemporaryQueueStrategy())
                   .Subscribe(HandleMessage)
-                  .SetLogger(new LogToConsole())
+                  .SetLogger(looger)
                   .Start();
         }
 
