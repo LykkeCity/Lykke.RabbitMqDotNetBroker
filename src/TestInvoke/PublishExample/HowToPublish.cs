@@ -5,7 +5,7 @@ namespace TestInvoke.PublishExample
 {
     public static class HowToPublish
     {
-        public static void Example(RabbitMqSubscribtionSettings settings)
+        public static void Example(RabbitMqSubscriptionSettings settings)
         {
 
             var connection

@@ -14,7 +14,7 @@ namespace RabbitMqBrokerTests
     internal abstract class RabbitMqPublisherSubscriberBaseTest
     {
         protected IConnectionFactory _factory;
-        protected RabbitMqSubscribtionSettings _settings;
+        protected RabbitMqSubscriptionSettings _settings;
         protected IConsole _console;
         protected ILog Log;
         protected const string ConnectionString = "amqp://guest:guest@localhost:5672";
@@ -40,7 +40,7 @@ namespace RabbitMqBrokerTests
             Log = Substitute.For<ILog>();
 
 
-            _settings = new RabbitMqSubscribtionSettings
+            _settings = new RabbitMqSubscriptionSettings
             {
                 ConnectionString = ConnectionString,
                 DeadLetterExchangeName = DeadLetterExchangeName,

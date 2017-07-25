@@ -13,7 +13,7 @@ namespace Lykke.RabbitMqBroker.Subscriber
             _routingKey = routingKey;
         }
 
-        public string Configure(RabbitMqSubscribtionSettings settings, IModel channel)
+        public string Configure(RabbitMqSubscriptionSettings settings, IModel channel)
         {
             // If specified queue name is empty generate random name
             var queueName = String.IsNullOrEmpty(settings.QueueName)

@@ -1,6 +1,6 @@
 ﻿namespace Lykke.RabbitMqBroker.Subscriber
 {
-    public sealed class RabbitMqSubscribtionSettings
+    public sealed class RabbitMqSubscriptionSettings
     {
         public string ConnectionString { get; set; }
         public string QueueName { get; set; }

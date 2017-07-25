@@ -7,9 +7,9 @@ namespace Lykke.RabbitMqBroker
     public sealed class DeadQueueErrorHandlingStrategy : IErrorHandlingStrategy
     {
         private readonly ILog _log;
-        private readonly RabbitMqSubscribtionSettings _settings;
+        private readonly RabbitMqSubscriptionSettings _settings;
 
-        public DeadQueueErrorHandlingStrategy(ILog log, RabbitMqSubscribtionSettings settings)
+        public DeadQueueErrorHandlingStrategy(ILog log, RabbitMqSubscriptionSettings settings)
         {
             _log = log;
             _settings = settings;

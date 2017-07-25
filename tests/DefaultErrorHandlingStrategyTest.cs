@@ -12,13 +12,13 @@ namespace RabbitMqBrokerTests
     {
         private DefaultErrorHandlingStrategy _strategy;
         private ILog _log;
-        private RabbitMqSubscribtionSettings _settings;
+        private RabbitMqSubscriptionSettings _settings;
 
         [SetUp]
         public void SetUp()
         {
             _log = Substitute.For<ILog>();
-            _settings = new RabbitMqSubscribtionSettings
+            _settings = new RabbitMqSubscriptionSettings
             {
                 QueueName = "QueueName"
             };

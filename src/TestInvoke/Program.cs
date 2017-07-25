@@ -9,7 +9,7 @@ namespace TestInvoke
 
         public static void Main(string[] args)
         {
-            var rabbitMqSettings = new RabbitMqSubscribtionSettings
+            var rabbitMqSettings = new RabbitMqSubscriptionSettings
             {
                 QueueName = Environment.GetEnvironmentVariable("RabbitMqQueue"),
                 ConnectionString = Environment.GetEnvironmentVariable("RabbitMqConnectionString")

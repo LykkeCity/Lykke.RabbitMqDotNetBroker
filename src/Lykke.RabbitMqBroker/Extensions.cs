@@ -5,17 +5,17 @@ namespace Lykke.RabbitMqBroker
 {
     internal static class RabbitMqSettingsExtension
     {
-        internal static string GetPublisherName(this RabbitMqSubscribtionSettings settings)
+        internal static string GetPublisherName(this RabbitMqSubscriptionSettings settings)
         {
             return $"Publisher {settings.ExchangeName}";
         }
 
-        internal static string GetSubscriberName(this RabbitMqSubscribtionSettings settings)
+        internal static string GetSubscriberName(this RabbitMqSubscriptionSettings settings)
         {
             return $"Subscriber {settings.QueueName}";
         }
 
-        internal static string GetQueueOrExchangeName(this RabbitMqSubscribtionSettings settings)
+        internal static string GetQueueOrExchangeName(this RabbitMqSubscriptionSettings settings)
         {
             return $"{(!string.IsNullOrEmpty(settings.ExchangeName) ? $"Exchange: {settings.ExchangeName}, " : string.Empty)}Queue: {settings.QueueName}";
         }

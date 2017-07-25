@@ -14,7 +14,7 @@ namespace Lykke.RabbitMqBroker.Publisher
             _routingKey = "";
         }
 
-        public DefaultFanoutPublishStrategy(RabbitMqSubscribtionSettings settings)
+        public DefaultFanoutPublishStrategy(RabbitMqSubscriptionSettings settings)
         {
             if (settings == null)
             {
@@ -24,7 +24,7 @@ namespace Lykke.RabbitMqBroker.Publisher
             _durable = settings.IsDurable;
         }
 
-        public void Configure(RabbitMqSubscribtionSettings settings, IModel channel)
+        public void Configure(RabbitMqSubscriptionSettings settings, IModel channel)
         {
             channel.ExchangeDeclare(exchange: settings.ExchangeName, type: "fanout", durable: _durable);
             if (!string.IsNullOrEmpty(settings.DeadLetterExchangeName))
@@ -33,7 +33,7 @@ namespace Lykke.RabbitMqBroker.Publisher
             }
         }
 
-        public void Publish(RabbitMqSubscribtionSettings settings, IModel channel, byte[] body)
+        public void Publish(RabbitMqSubscriptionSettings settings, IModel channel, byte[] body)
         {
             channel.BasicPublish(exchange: settings.ExchangeName,
                       routingKey: _routingKey,

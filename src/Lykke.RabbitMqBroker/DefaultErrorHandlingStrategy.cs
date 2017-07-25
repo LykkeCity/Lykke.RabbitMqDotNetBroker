@@ -7,10 +7,10 @@ namespace Lykke.RabbitMqBroker
     public sealed class DefaultErrorHandlingStrategy : IErrorHandlingStrategy
     {
         private readonly ILog _log;
-        private readonly RabbitMqSubscribtionSettings _settings;
+        private readonly RabbitMqSubscriptionSettings _settings;
         private readonly IErrorHandlingStrategy _next;
 
-        public DefaultErrorHandlingStrategy(ILog log, RabbitMqSubscribtionSettings settings, IErrorHandlingStrategy next = null)
+        public DefaultErrorHandlingStrategy(ILog log, RabbitMqSubscriptionSettings settings, IErrorHandlingStrategy next = null)
         {
             if (log == null)
             {

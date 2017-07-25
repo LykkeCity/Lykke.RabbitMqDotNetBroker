@@ -9,7 +9,7 @@ namespace TestInvoke.SubscribeExample
     public class HowToSubscribe
     {
         private static RabbitMqSubscriber<string> _connector;
-        public static void Example(RabbitMqSubscribtionSettings settings)
+        public static void Example(RabbitMqSubscriptionSettings settings)
         {
             var looger = new LogToConsole();
 

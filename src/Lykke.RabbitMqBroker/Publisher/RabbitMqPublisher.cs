@@ -18,13 +18,13 @@ namespace Lykke.RabbitMqBroker.Publisher
 
     public interface IRabbitMqPublishStrategy
     {
-        void Configure(RabbitMqSubscribtionSettings settings, IModel channel);
-        void Publish(RabbitMqSubscribtionSettings settings, IModel channel, byte[] data);
+        void Configure(RabbitMqSubscriptionSettings settings, IModel channel);
+        void Publish(RabbitMqSubscriptionSettings settings, IModel channel, byte[] data);
     }
 
     public class RabbitMqPublisher<TMessageModel> : IMessageProducer<TMessageModel>, IStartable, IStopable
     {
-        private readonly RabbitMqSubscribtionSettings _settings;
+        private readonly RabbitMqSubscriptionSettings _settings;
         private readonly Queue<TMessageModel> _items = new Queue<TMessageModel>();
         private Thread _thread;
         private IRabbitMqSerializer<TMessageModel> _serializer;
@@ -32,7 +32,7 @@ namespace Lykke.RabbitMqBroker.Publisher
         private IConsole _console;
         private IRabbitMqPublishStrategy _publishStrategy;
 
-        public RabbitMqPublisher(RabbitMqSubscribtionSettings settings)
+        public RabbitMqPublisher(RabbitMqSubscriptionSettings settings)
         {
             _settings = settings;
         }

@@ -8,12 +8,12 @@ namespace Lykke.RabbitMqBroker
     public sealed class ResilientErrorHandlingStrategy : IErrorHandlingStrategy
     {
         private readonly ILog _log;
-        private readonly RabbitMqSubscribtionSettings _settings;
+        private readonly RabbitMqSubscriptionSettings _settings;
         private readonly TimeSpan _retryTimeout;
         private readonly int _retryNum;
         private readonly IErrorHandlingStrategy _next;
 
-        public ResilientErrorHandlingStrategy(ILog log, RabbitMqSubscribtionSettings settings, TimeSpan retryTimeout, int retryNum = 5, IErrorHandlingStrategy next = null)
+        public ResilientErrorHandlingStrategy(ILog log, RabbitMqSubscriptionSettings settings, TimeSpan retryTimeout, int retryNum = 5, IErrorHandlingStrategy next = null)
         {
             if (log == null)
             {
