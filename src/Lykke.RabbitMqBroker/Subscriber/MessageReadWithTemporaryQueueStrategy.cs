@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using RabbitMQ.Client;
 
 namespace Lykke.RabbitMqBroker.Subscriber
@@ -12,11 +13,11 @@ namespace Lykke.RabbitMqBroker.Subscriber
             _routingKey = routingKey;
         }
 
-        public string Configure(RabbitMqSubscriberSettings settings, IModel channel)
+        public string Configure(RabbitMqSubscriptionSettings settings, IModel channel)
         {
             // If specified queue name is empty generate random name
-            var queueName = String.IsNullOrEmpty(settings.QueueName) 
-                ? settings.ExchangeName + "." + Guid.NewGuid().ToString() 
+            var queueName = String.IsNullOrEmpty(settings.QueueName)
+                ? settings.ExchangeName + "." + Guid.NewGuid().ToString()
                 : settings.QueueName;
 
             // For random name set autodelete
@@ -24,8 +25,20 @@ namespace Lykke.RabbitMqBroker.Subscriber
 
             // autodelete is always reverse from isdurable
             var autodelete = !settings.IsDurable;
+            IDictionary<string, object> args = null;
+            if (!string.IsNullOrEmpty(settings.DeadLetterExchangeName))
+            {
+                var poisonQueueName = $"{queueName}-poison";
+                args = new Dictionary<string, object>
+                {
+                    { "x-dead-letter-exchange", settings.DeadLetterExchangeName }
+                };
+                channel.QueueDeclare(poisonQueueName, durable: settings.IsDurable, exclusive: false, autoDelete: false);
+                channel.QueueBind(poisonQueueName, settings.DeadLetterExchangeName, settings.RoutingKey);
+            }
 
-            settings.QueueName = channel.QueueDeclare(queueName, durable: settings.IsDurable, exclusive: false, autoDelete: autodelete).QueueName;
+            settings.QueueName = channel.QueueDeclare(queueName, durable: settings.IsDurable, exclusive: false, autoDelete: autodelete, arguments: args).QueueName;
+
 
             channel.QueueBind(
                 queue: settings.QueueName,

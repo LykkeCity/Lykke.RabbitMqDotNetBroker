@@ -1,12 +1,12 @@
 ﻿using Lykke.RabbitMqBroker.Publisher;
+using Lykke.RabbitMqBroker.Subscriber;
 
 namespace TestInvoke.PublishExample
 {
     public static class HowToPublish
     {
-        public static void Example(RabbitMqPublisherSettings settings)
+        public static void Example(RabbitMqSubscriptionSettings settings)
         {
-
 
             var connection
                 = new RabbitMqPublisher<string>(settings)

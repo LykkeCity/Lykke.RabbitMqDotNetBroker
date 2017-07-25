@@ -18,13 +18,14 @@ namespace Lykke.RabbitMqBroker.Subscriber
 
     public interface IMessageReadStrategy
     {
-        string Configure(RabbitMqSubscriberSettings settings, IModel channel);
+        string Configure(RabbitMqSubscriptionSettings settings, IModel channel);
     }
 
     public class RabbitMqSubscriber<TTopicModel> : IStartable, IStopable, IMessageConsumer<TTopicModel>
     {
-        private readonly List<Func<TTopicModel, Task>> _eventHandlers = new List<Func<TTopicModel, Task>>();
-        private readonly RabbitMqSubscriberSettings _rabbitMqSettings;
+        private Func<TTopicModel, Task> _eventHandler;
+        private readonly RabbitMqSubscriptionSettings _rabbitMqSettings;
+        private readonly IErrorHandlingStrategy _errorHandlingStrategy;
         private readonly int _reconnectTimeOut;
         private ILog _log;
         private Thread _thread;
@@ -32,9 +33,10 @@ namespace Lykke.RabbitMqBroker.Subscriber
         private IMessageReadStrategy _messageReadStrategy;
         private IConsole _console;
 
-        public RabbitMqSubscriber(RabbitMqSubscriberSettings rabbitMqSettings, int reconnectTimeOut = 3000)
+        public RabbitMqSubscriber(RabbitMqSubscriptionSettings rabbitMqSettings, IErrorHandlingStrategy errorHandlingStrategy, int reconnectTimeOut = 3000)
         {
             _rabbitMqSettings = rabbitMqSettings;
+            _errorHandlingStrategy = errorHandlingStrategy;
             _reconnectTimeOut = reconnectTimeOut;
         }
 
@@ -49,7 +51,7 @@ namespace Lykke.RabbitMqBroker.Subscriber
 
         public RabbitMqSubscriber<TTopicModel> Subscribe(Func<TTopicModel, Task> callback)
         {
-            _eventHandlers.Add(callback);
+            _eventHandler = callback;
             return this;
         }
 
@@ -109,7 +111,7 @@ namespace Lykke.RabbitMqBroker.Subscriber
 
         private void ConnectAndReadAsync()
         {
-            var factory = new ConnectionFactory {Uri = _rabbitMqSettings.ConnectionString};
+            var factory = new ConnectionFactory { Uri = _rabbitMqSettings.ConnectionString };
             _console?.WriteLine($"{_rabbitMqSettings.GetSubscriberName()}: trying to connect to {_rabbitMqSettings.ConnectionString} ({_rabbitMqSettings.GetQueueOrExchangeName()})");
 
             using (var connection = factory.CreateConnection())
@@ -120,7 +122,7 @@ namespace Lykke.RabbitMqBroker.Subscriber
                 var queueName = _messageReadStrategy.Configure(_rabbitMqSettings, channel);
 
                 var consumer = new QueueingBasicConsumer(channel);
-                string tag = channel.BasicConsume(queueName, true, consumer);
+                string tag = channel.BasicConsume(queueName, false, consumer);
 
                 //consumer.Received += MessageReceived;
 
@@ -129,7 +131,9 @@ namespace Lykke.RabbitMqBroker.Subscriber
                     BasicDeliverEventArgs eventArgs;
                     var delivered = consumer.Queue.Dequeue(2000, out eventArgs);
                     if (delivered)
-                        MessageReceived(eventArgs);
+                    {
+                        MessageReceived(eventArgs, channel);
+                    }
                 }
 
                 channel.BasicCancel(tag);
@@ -139,18 +143,23 @@ namespace Lykke.RabbitMqBroker.Subscriber
             }
         }
 
-        private void MessageReceived(BasicDeliverEventArgs basicDeliverEventArgs)
+        private void MessageReceived(BasicDeliverEventArgs basicDeliverEventArgs, IModel channel)
         {
             try
-            {        
+            {
+                var tag = basicDeliverEventArgs.DeliveryTag;
                 var body = basicDeliverEventArgs.Body;
                 var model = _messageDeserializer.Deserialize(body);
-                Task.WhenAll(_eventHandlers.Select(eventHandler => eventHandler(model))).Wait();
+
+                var ma = new MessageAcceptor(channel, tag);
+
+                _errorHandlingStrategy.Execute(() => _eventHandler(model).Wait(), ma);
+
             }
             catch (Exception ex)
             {
-                _console?.WriteLine($"{_rabbitMqSettings.GetSubscriberName()}: ERROR on MessageReceived: {ex.Message}");
-                _log?.WriteErrorAsync(_rabbitMqSettings.GetSubscriberName(), "Message Recieveing", "", ex);
+                _console?.WriteLine("Error in error handling strategy");
+                _log?.WriteErrorAsync(GetType().Name, "Error in error handling strategy", "Message Receiving", ex);
             }
 
         }
@@ -165,7 +174,7 @@ namespace Lykke.RabbitMqBroker.Subscriber
             if (_messageDeserializer == null)
                 throw new Exception("Please specify message deserializer");
 
-            if (_eventHandlers.Count == 0)
+            if (_eventHandler == null)
                 throw new Exception("Please specify message handler");
 
             if (_messageReadStrategy == null)
