@@ -75,7 +75,7 @@ namespace Lykke.RabbitMqBroker.Publisher
         public RabbitMqPublisher<TMessageModel> Start()
         {
             if (_publishStrategy == null)
-                _publishStrategy = new DefaultFanoutPublishStrategy();
+                _publishStrategy = new DefaultFanoutPublishStrategy(_settings);
             
             if (_thread == null)
             {
