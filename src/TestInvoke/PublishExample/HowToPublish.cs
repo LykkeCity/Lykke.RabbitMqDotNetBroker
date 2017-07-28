@@ -11,6 +11,7 @@ namespace TestInvoke.PublishExample
             var connection
                 = new RabbitMqPublisher<string>(settings)
                 .SetSerializer(new TestMessageSerializer())
+                .SetPublishStrategy(new DefaultFanoutPublishStrategy(settings))
                 .Start();
 
 

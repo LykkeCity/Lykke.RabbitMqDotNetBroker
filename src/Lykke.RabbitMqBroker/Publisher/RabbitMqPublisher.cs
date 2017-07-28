@@ -99,7 +99,7 @@ namespace Lykke.RabbitMqBroker.Publisher
                 throw new Exception("RabbitMQPublisher serializer is not specified");
 
             if (_publishStrategy == null)
-                _publishStrategy = new DefaultFanoutPublishStrategy();
+                _publishStrategy = new DefaultFanoutPublishStrategy(_settings);
 
             _thread = null;
             thread.Join();

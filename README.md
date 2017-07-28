@@ -1,4 +1,4 @@
-[![Build status](http://teamcity.lykkex.net/app/rest/builds/aggregated/strob:(buildType:(project:(id:CommonLibraries_LykkeRabbitMqBroker)))/statusIcon.svg)]
+![Build status](http://teamcity.lykkex.net/app/rest/builds/aggregated/strob:(buildType:(project:(id:CommonLibraries_LykkeRabbitMqBroker)))/statusIcon.svg)
 
 Nuget: https://www.nuget.org/packages/Lykke.RabbitMqBroker/
 
