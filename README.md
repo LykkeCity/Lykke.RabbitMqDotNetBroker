@@ -23,29 +23,21 @@ If you want to use a publisher partten answer next questions:
  - Publish, publish, publish
  
  
- Example:
+ Minimal working example:
 ```csharp
-    public static class HowToPublish
-    {
-        public static void Example(RabbitMqSettings settings)
+       public static void Example(RabbitMqSubscriptionSettings settings)
         {
-            var rabbitMqSettings = new RabbitMqSettings
-            {
-                ConnectionString = "",
-                QueueName = ""
-            };
 
             var connection
-                = new RabbitMqPublisher<string>(rabbitMqSettings)
+                = new RabbitMqPublisher<string>(settings)
                 .SetSerializer(new TestMessageSerializer())
+                .SetPublishStrategy(new DefaultFanoutPublishStrategy(settings))
                 .Start();
 
 
             for (var i = 0; i <= 10; i++)
                 connection.ProduceAsync("message#" + i);
         }
-
-    }
 ```
 
 # How to subscribe and consume
@@ -61,12 +53,12 @@ To consume messages produced by publisher - answer these questions:
  - How are you going to handle exceptions on the client side. There are three strategies:
 	 - *DefaultErrorHandlingStrategy* - it just logs an exception and receives a new message from RabbitMQ
 	 - *ResilientErrorHandlingStrategy* - it accepts two arguments: *retryTimeout* and *retryNum*. In case of an exception it tries execute the handle *retryNum* times with *retryTimeout* between attempts. 
-	 - *DeadQueueErrorHandlingStrategy* - in case of an exception it rejects the message and if you provided a name of the dead letter exchange in the *RabbitMqSubscriptionSettings*  and that exchange exists, then the message will be routed to the dead-letter queue. For more details about dead-letters see [Dead Letter Exchanges](https://www.rabbitmq.com/dlx.html)
-Strategies can be chained. If the first failed to handle the exception it call next (if any). Please note that for the first two strategies you will lose your message forever in case of unrecoverable exception. For important messages recommended to use the second and third strategies chained.
+	 - *DeadQueueErrorHandlingStrategy* - in case of an exception it rejects the message and if it is provided a name of the dead letter exchange in the *RabbitMqSubscriptionSettings*  and that exchange exists, then the message will be routed to the dead-letter queue. For more details about dead-letters see [Dead Letter Exchanges](https://www.rabbitmq.com/dlx.html)
+Strategies can be chained. If the first failed to handle the exception it call next (if any). Please note that with the first two strategies you will lose your message forever in case of unrecoverable exception. For important messages it is recommended to use the second and third strategies chained.
    
- Example:
+ Minimal working example:
  ```csharp
- public class HowToSubscribe
+    public class HowToSubscribe
     {
         private static RabbitMqSubscriber<string> _connector;
         public static void Example(RabbitMqSubscriptionSettings settings)
@@ -76,9 +68,8 @@ Strategies can be chained. If the first failed to handle the exception it call n
             _connector =
                 new RabbitMqSubscriber<string>(settings, new DefaultErrorHandlingStrategy(looger, settings))
                   .SetMessageDeserializer(new TestMessageDeserializer())
-                  .SetMessageReadStrategy(new MessageReadWithTemporaryQueueStrategy())
+                  .CreateDefaultBinding()
                   .Subscribe(HandleMessage)
-                  .SetLogger(looger)
                   .Start();
         }
 
