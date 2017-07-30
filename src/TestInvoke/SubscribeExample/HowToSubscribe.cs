@@ -16,9 +16,8 @@ namespace TestInvoke.SubscribeExample
             _connector =
                 new RabbitMqSubscriber<string>(settings, new DefaultErrorHandlingStrategy(looger, settings))
                   .SetMessageDeserializer(new TestMessageDeserializer())
-                  .SetMessageReadStrategy(new MessageReadWithTemporaryQueueStrategy())
+                  .CreateDefaultBinding()
                   .Subscribe(HandleMessage)
-                  .SetLogger(looger)
                   .Start();
         }
 
