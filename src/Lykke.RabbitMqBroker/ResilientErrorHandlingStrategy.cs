@@ -35,6 +35,7 @@ namespace Lykke.RabbitMqBroker
             try
             {
                 handler();
+                ma.Accept();
             }
             catch (Exception ex)
             {
