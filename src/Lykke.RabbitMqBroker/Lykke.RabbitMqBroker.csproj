@@ -1,7 +1,7 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netcoreapp1.1</TargetFramework>
+    <TargetFramework>netstandard2.0</TargetFramework>
     <AssemblyName>Lykke.RabbitMqBroker</AssemblyName>
     <PackageId>Lykke.RabbitMqBroker</PackageId>
     <RuntimeFrameworkVersion>1.1.1</RuntimeFrameworkVersion>
@@ -22,7 +22,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Lykke.Common" Version="1.1.69" />
+    <PackageReference Include="Lykke.Common" Version="1.1.84" />
     <PackageReference Include="RabbitMQ.Client" Version="4.1.1" />
   </ItemGroup>
 

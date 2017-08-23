@@ -93,6 +93,11 @@ namespace Lykke.RabbitMqBroker.Publisher
 
         void IStopable.Stop()
         {
+            Stop();
+        }
+
+        public void Stop()
+        {
             var thread = _thread;
 
             if (thread == null)
@@ -106,6 +111,11 @@ namespace Lykke.RabbitMqBroker.Publisher
 
             _thread = null;
             thread.Join();
+        }
+
+        public void Dispose()
+        {
+            ((IStopable)this).Stop();
         }
 
         private bool IsStopped()

@@ -202,5 +202,10 @@ namespace Lykke.RabbitMqBroker.Subscriber
             _thread = null;
             thread.Join();
         }
+
+        public void Dispose()
+        {
+            ((IStopable) this).Stop();
+        }
     }
 }
