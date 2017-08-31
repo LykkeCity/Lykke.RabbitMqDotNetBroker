@@ -177,12 +177,20 @@ namespace Lykke.RabbitMqBroker.Publisher
             {
                 try
                 {
-                    ConnectAndWrite();
+                    try
+                    {
+                        ConnectAndWrite();
+                    }
+                    catch (Exception e)
+                    {
+                        _console?.WriteLine($"{_settings.GetPublisherName()}: ERROR: {e.Message}");
+                        _log?.WriteErrorAsync(_settings.GetPublisherName(), "ConnectionThread", "", e).Wait();
+                    }
                 }
-                catch (Exception e)
+                // Saves the loop if nothing didn't help
+                // ReSharper disable once EmptyGeneralCatchClause
+                catch
                 {
-                    _console?.WriteLine($"{_settings.GetPublisherName()}: ERROR: {e.Message}");
-                    _log?.WriteErrorAsync(_settings.GetPublisherName(), "ConnectionThread", "", e).Wait();
                 }
             }
         }
