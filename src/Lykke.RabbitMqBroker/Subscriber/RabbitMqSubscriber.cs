@@ -4,8 +4,6 @@ using Common;
 using Common.Log;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using Autofac;
 
@@ -94,19 +92,29 @@ namespace Lykke.RabbitMqBroker.Subscriber
         private void ReadThread()
         {
             while (!IsStopped())
+            {
                 try
                 {
-                    ConnectAndReadAsync();
+                    try
+                    {
+                        ConnectAndReadAsync();
+                    }
+                    catch (Exception ex)
+                    {
+                        _console?.WriteLine($"{_rabbitMqSettings.GetSubscriberName()}: ERROR: {ex.Message}");
+                        _log?.WriteFatalErrorAsync(_rabbitMqSettings.GetSubscriberName(), "ReadThread", "", ex).Wait();
+                    }
+                    finally
+                    {
+                        Thread.Sleep(_reconnectTimeOut);
+                    }
                 }
-                catch (Exception ex)
+                // Saves the loop if nothing didn't help
+                // ReSharper disable once EmptyGeneralCatchClause
+                catch
                 {
-                    _console?.WriteLine($"{_rabbitMqSettings.GetSubscriberName()}: ERROR: {ex.Message}");
-                    _log?.WriteFatalErrorAsync(_rabbitMqSettings.GetSubscriberName(), "ReadThread", "", ex).Wait();
                 }
-                finally
-                {
-                    Thread.Sleep(_reconnectTimeOut);
-                }
+            }
         }
 
         private void ConnectAndReadAsync()
@@ -159,7 +167,7 @@ namespace Lykke.RabbitMqBroker.Subscriber
             catch (Exception ex)
             {
                 _console?.WriteLine("Error in error handling strategy");
-                _log?.WriteErrorAsync(GetType().Name, "Error in error handling strategy", "Message Receiving", ex);
+                _log?.WriteErrorAsync(GetType().Name, "Error in error handling strategy", "Message Receiving", ex).Wait();
             }
 
         }
