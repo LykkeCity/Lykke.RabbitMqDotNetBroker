@@ -63,7 +63,7 @@ namespace RabbitMqBrokerTests
 
                 }
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 _console.WriteLine("The rabbitmq server either not installed or not started");
                 Assert.Inconclusive("The rabbitmq server either not installed or not started");
