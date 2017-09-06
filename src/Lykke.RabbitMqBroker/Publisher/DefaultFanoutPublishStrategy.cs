@@ -22,10 +22,6 @@ namespace Lykke.RabbitMqBroker.Publisher
         public void Configure(RabbitMqSubscriptionSettings settings, IModel channel)
         {
             channel.ExchangeDeclare(exchange: settings.ExchangeName, type: "fanout", durable: _durable);
-            if (!string.IsNullOrEmpty(settings.DeadLetterExchangeName))
-            {
-                channel.ExchangeDeclare(exchange: settings.DeadLetterExchangeName, type: "direct", durable: true);
-            }
         }
 
         public void Publish(RabbitMqSubscriptionSettings settings, IModel channel, byte[] body)
