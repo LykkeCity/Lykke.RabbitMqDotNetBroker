@@ -143,7 +143,7 @@ namespace Lykke.RabbitMqBroker.Publisher
 
         private void LoadQueue()
         {
-            var items = _queueRepository.LoadAsync().Result;
+            var items = _queueRepository.LoadAsync(_settings.ExchangeName).Result;
 
             if (items == null || !items.Any())
             {
@@ -173,7 +173,7 @@ namespace Lykke.RabbitMqBroker.Publisher
                 items = _items.ToArray();
             }
 
-            _queueRepository.SaveAsync(items).Wait();
+            _queueRepository.SaveAsync(items, _settings.ExchangeName).Wait();
         }
 
         private bool IsStopped()
