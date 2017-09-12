@@ -17,6 +17,7 @@ We use one exchange/funout - one type of contract model
 If you want to use a publisher partten answer next questions:
  - Which RabbitMQ server do you want to be connected using notation: https://www.rabbitmq.com/uri-spec.html 
  - How do you want serealize your model to array of bytes: implement your IMessageSerializer<TModel> interface and confugre it
+ - How do you want to store unpublished messages queue, to recover when app is restarted: reference (Lykke.RabbitMq.Azure)[https://www.nuget.org/packages/Lykke.RabbitMq.Azure] and use BlobPublishingQueueRepository implementation of IPublishingQueueRepository, or implement your own
  - Which RabbitMQ publish strategy do you want to use. Use whichever we already have or feel free to write your own IMessagePublishStrategy and do pull request; https://www.rabbitmq.com/tutorials/tutorial-three-dotnet.html
  - Specify Lykke Logging system: ILog;
  - Start the publisher;
@@ -25,13 +26,18 @@ If you want to use a publisher partten answer next questions:
  
  Minimal working example:
 ```csharp
+       using Lykke.RabbitMq.Azure;
+       
+       ...
+
        public static void Example(RabbitMqSubscriptionSettings settings)
         {
 
             var connection
                 = new RabbitMqPublisher<string>(settings)
-                .SetSerializer(new TestMessageSerializer())
+                .SetSerializer(new JsonMessageSerializer())
                 .SetPublishStrategy(new DefaultFanoutPublishStrategy(settings))
+                .SetQueueRepository(new BlobPublishingQueueRepository(new AzureBlobStorage(ConnectionString)))
                 .Start();
 
 
