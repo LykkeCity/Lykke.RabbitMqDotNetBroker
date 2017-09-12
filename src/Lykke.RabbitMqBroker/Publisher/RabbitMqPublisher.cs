@@ -89,6 +89,10 @@ namespace Lykke.RabbitMqBroker.Publisher
             {
                 throw new InvalidOperationException($"Please, setup message serializer, using {nameof(SetSerializer)}() method, before start publisher");
             }
+            if (_log == null)
+            {
+                throw new InvalidOperationException($"Please, setup logger, using {nameof(SetLogger)}() method, before start publisher");
+            }
 
             if (_publishStrategy == null)
                 _publishStrategy = new DefaultFanoutPublishStrategy(_settings);
@@ -239,8 +243,7 @@ namespace Lykke.RabbitMqBroker.Publisher
 
                         if (_reconnectionsInARowCount > _settings.ReconnectionsCountToAlarm)
                         {
-                            _log?.WriteFatalErrorAsync(_settings.GetPublisherName(), nameof(ConnectionThread), "", e)
-                                .Wait();
+                            _log.WriteFatalErrorAsync(_settings.GetPublisherName(), nameof(ConnectionThread), "", e).Wait();
 
                             _reconnectionsInARowCount = 0;
                         }

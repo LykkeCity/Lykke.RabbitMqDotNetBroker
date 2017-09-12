@@ -112,8 +112,7 @@ namespace Lykke.RabbitMqBroker.Subscriber
 
                         if (_reconnectionsInARowCount > _settings.ReconnectionsCountToAlarm)
                         {
-                            _log?.WriteFatalErrorAsync(_settings.GetSubscriberName(), nameof(ReadThread), "", ex)
-                                .Wait();
+                            _log.WriteFatalErrorAsync(_settings.GetSubscriberName(), nameof(ReadThread), "", ex).Wait();
 
                             _reconnectionsInARowCount = 0;
                         }
@@ -188,7 +187,7 @@ namespace Lykke.RabbitMqBroker.Subscriber
             catch (Exception ex)
             {
                 _console?.WriteLine("Error in error handling strategy");
-                _log?.WriteErrorAsync(GetType().Name, "Error in error handling strategy", "Message Receiving", ex).Wait();
+                _log.WriteErrorAsync(GetType().Name, "Error in error handling strategy", "Message Receiving", ex).Wait();
             }
 
         }
@@ -201,10 +200,17 @@ namespace Lykke.RabbitMqBroker.Subscriber
         public RabbitMqSubscriber<TTopicModel> Start()
         {
             if (_messageDeserializer == null)
-                throw new InvalidOperationException("Please specify message deserializer");
-
+            {
+                throw new InvalidOperationException("Please, specify message deserializer");
+            }
             if (_eventHandler == null)
-                throw new InvalidOperationException("Please specify message handler");
+            {
+                throw new InvalidOperationException("Please, specify message handler");
+            }
+            if (_log == null)
+            {
+                throw new InvalidOperationException("Please, specify log");
+            }
 
             if (_messageReadStrategy == null)
                 CreateDefaultBinding();
