@@ -145,7 +145,7 @@ namespace Lykke.RabbitMqBroker.Publisher
         {
             var items = _queueRepository.LoadAsync().Result;
 
-            if (!items.Any())
+            if (items == null || !items.Any())
             {
                 return;
             }
