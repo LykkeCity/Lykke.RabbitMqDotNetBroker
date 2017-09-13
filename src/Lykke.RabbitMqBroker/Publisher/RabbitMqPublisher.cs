@@ -152,7 +152,7 @@ namespace Lykke.RabbitMqBroker.Publisher
 
             lock (_items)
             {
-                if (items.Any())
+                if (_items.Any())
                 {
                     throw new InvalidOperationException($"{_settings.GetPublisherName()}: messages queue already not empty, can't load persisted messages");
                 }
