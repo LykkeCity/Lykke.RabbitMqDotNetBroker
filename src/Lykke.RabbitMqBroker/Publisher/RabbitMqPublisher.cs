@@ -76,11 +76,11 @@ namespace Lykke.RabbitMqBroker.Publisher
         }
 
         /// <summary>
-        /// Configure in-memory messages queue size monitoring
+        /// Configure in-memory messages queue size monitoring. Default monitor will be created, if you not call this method.
+        /// Default monitor <paramref name="queueSizeThreshold"/> = 1000, <paramref name="monitorPeriod"/> = 10 seconds.
         /// </summary>
         /// <param name="queueSizeThreshold">Queue size threshold after which alarm will be enabled. Default is 1000</param>
         /// <param name="monitorPeriod">Queue size check period. Default is 10 seconds</param>
-        /// <returns></returns>
         public RabbitMqPublisher<TMessageModel> MonitorInMemoryQueue(int queueSizeThreshold = 1000, TimeSpan? monitorPeriod = null)
         {
             if (queueSizeThreshold < 1)
@@ -138,6 +138,7 @@ namespace Lykke.RabbitMqBroker.Publisher
 
         public RabbitMqPublisher<TMessageModel> Start()
         {
+            // Check configuration
             if (_queueRepository == null ^ _disableQueuePersistence)
             {
                 throw new InvalidOperationException($"Please, do one of - setup queue repository, using {nameof(SetQueueRepository)}() method, or disable queue persistence using {nameof(DisableInMemoryQueuePersistence)}() method, before start publisher");
@@ -150,13 +151,16 @@ namespace Lykke.RabbitMqBroker.Publisher
             {
                 throw new InvalidOperationException($"Please, setup logger, using {nameof(SetLogger)}() method, before start publisher");
             }
+
+            // Set defaults
             if (_queueMonitor == null)
             {
-                throw new InvalidOperationException($"Please, configure queue monitoru, using {nameof(MonitorInMemoryQueue)}() method, before start publisher");
+                MonitorInMemoryQueue();
             }
-
             if (_publishStrategy == null)
-                _publishStrategy = new DefaultFanoutPublishStrategy(_settings);
+            {
+                SetPublishStrategy(new DefaultFanoutPublishStrategy(_settings));
+            }
 
             if (_thread == null)
             {
