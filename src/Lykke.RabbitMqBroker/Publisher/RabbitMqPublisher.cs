@@ -11,10 +11,28 @@ using RabbitMQ.Client;
 
 namespace Lykke.RabbitMqBroker.Publisher
 {
-    public class RabbitMqPublisher<TMessageModel> : IMessageProducer<TMessageModel>, IStartable, IStopable
+    public class RabbitMqPublisher<TMessageModel> : 
+        IInMemoryQueuePublisher, 
+        IMessageProducer<TMessageModel>, 
+        IStartable, 
+        IStopable
     {
+        public int QueueSize
+        {
+            get
+            {
+                lock (_items)
+                {
+                    return _items.Count;
+                }
+            }
+        }
+
+        public string Name => _settings.GetPublisherName();
+        
         private readonly RabbitMqSubscriptionSettings _settings;
         private IPublishingQueueRepository<TMessageModel> _queueRepository;
+        private bool _disableQueuePersistence;
         private readonly Queue<TMessageModel> _items = new Queue<TMessageModel>();
         private Thread _thread;
         private IRabbitMqSerializer<TMessageModel> _serializer;
@@ -22,7 +40,8 @@ namespace Lykke.RabbitMqBroker.Publisher
         private IConsole _console;
         private IRabbitMqPublishStrategy _publishStrategy;
         private int _reconnectionsInARowCount;
-             
+        private RabbitMqPublisherQueueMonitor _queueMonitor;
+
         public RabbitMqPublisher(RabbitMqSubscriptionSettings settings)
         {
             _settings = settings;
@@ -33,9 +52,47 @@ namespace Lykke.RabbitMqBroker.Publisher
         /// <summary>
         /// Sets repository, which is used to save and load in-memory messages queue while starting and stopping 
         /// </summary>
+        /// <remarks>
+        /// Mutual exclusive with <see cref="DisableInMemoryQueuePersistence"/>, but one of which should be called
+        /// </remarks>
         public RabbitMqPublisher<TMessageModel> SetQueueRepository(IPublishingQueueRepository<TMessageModel> queueRepository)
         {
             _queueRepository = queueRepository;
+
+            return this;
+        }
+
+        /// <summary>
+        /// Disables in-memory messages queue saving and loading while starting and stopping
+        /// </summary>
+        /// <remarks>
+        /// Mutual exclusive with <see cref="SetQueueRepository"/>, but one of which should be called
+        /// </remarks>
+        public RabbitMqPublisher<TMessageModel> DisableInMemoryQueuePersistence()
+        {
+            _disableQueuePersistence = true;
+
+            return this;
+        }
+
+        /// <summary>
+        /// Configures in-memory messages queue size monitoring. Default monitor will be created, if you not call this method.
+        /// Default monitor <paramref name="queueSizeThreshold"/> = 1000, <paramref name="monitorPeriod"/> = 10 seconds.
+        /// </summary>
+        /// <param name="queueSizeThreshold">Queue size threshold after which alarm will be enabled. Default is 1000</param>
+        /// <param name="monitorPeriod">Queue size check period. Default is 10 seconds</param>
+        public RabbitMqPublisher<TMessageModel> MonitorInMemoryQueue(int queueSizeThreshold = 1000, TimeSpan? monitorPeriod = null)
+        {
+            if (queueSizeThreshold < 1)
+            {
+                throw new ArgumentException("Should be positive number", nameof(queueSizeThreshold));
+            }
+            if (_log == null)
+            {
+                throw new InvalidOperationException("Log should be set first");
+            }
+
+            _queueMonitor = new RabbitMqPublisherQueueMonitor(this, queueSizeThreshold, monitorPeriod ?? TimeSpan.FromSeconds(10), _log);
 
             return this;
         }
@@ -70,7 +127,7 @@ namespace Lykke.RabbitMqBroker.Publisher
         {
             if (IsStopped())
             {
-                throw new InvalidOperationException($"{_settings.GetPublisherName()}: publisher is not runned, can't produce the message");
+                throw new InvalidOperationException($"{Name}: publisher is not runned, can't produce the message");
             }
 
             lock (_items)
@@ -81,9 +138,10 @@ namespace Lykke.RabbitMqBroker.Publisher
 
         public RabbitMqPublisher<TMessageModel> Start()
         {
-            if (_queueRepository == null)
+            // Check configuration
+            if (_queueRepository == null ^ _disableQueuePersistence)
             {
-                throw new InvalidOperationException($"Please, setup queue repository, using {nameof(SetQueueRepository)}() method, before start publisher");
+                throw new InvalidOperationException($"Please, do one of - setup queue repository, using {nameof(SetQueueRepository)}() method, or disable queue persistence using {nameof(DisableInMemoryQueuePersistence)}() method, before start publisher");
             }
             if (_serializer == null)
             {
@@ -94,8 +152,15 @@ namespace Lykke.RabbitMqBroker.Publisher
                 throw new InvalidOperationException($"Please, setup logger, using {nameof(SetLogger)}() method, before start publisher");
             }
 
+            // Set defaults
+            if (_queueMonitor == null)
+            {
+                MonitorInMemoryQueue();
+            }
             if (_publishStrategy == null)
-                _publishStrategy = new DefaultFanoutPublishStrategy(_settings);
+            {
+                SetPublishStrategy(new DefaultFanoutPublishStrategy(_settings));
+            }
 
             if (_thread == null)
             {
@@ -105,6 +170,8 @@ namespace Lykke.RabbitMqBroker.Publisher
 
                 _thread = new Thread(ConnectionThread);
                 _thread.Start();
+
+                _queueMonitor.Start();
             }
 
             return this;
@@ -133,6 +200,8 @@ namespace Lykke.RabbitMqBroker.Publisher
             _thread = null;
             thread.Join();
 
+            _queueMonitor.Stop();
+
             SaveQueue();
         }
         
@@ -143,6 +212,11 @@ namespace Lykke.RabbitMqBroker.Publisher
 
         private void LoadQueue()
         {
+            if (_disableQueuePersistence)
+            {
+                return;
+            }
+
             var items = _queueRepository.LoadAsync(_settings.ExchangeName).Result;
 
             if (items == null || !items.Any())
@@ -154,7 +228,7 @@ namespace Lykke.RabbitMqBroker.Publisher
             {
                 if (_items.Any())
                 {
-                    throw new InvalidOperationException($"{_settings.GetPublisherName()}: messages queue already not empty, can't load persisted messages");
+                    throw new InvalidOperationException($"{Name}: messages queue already not empty, can't load persisted messages");
                 }
 
                 foreach (var item in items)
@@ -166,6 +240,11 @@ namespace Lykke.RabbitMqBroker.Publisher
 
         private void SaveQueue()
         {
+            if (_disableQueuePersistence)
+            {
+                return;
+            }
+
             TMessageModel[] items;
 
             lock (_items)
@@ -196,19 +275,19 @@ namespace Lykke.RabbitMqBroker.Publisher
         {
             var factory = new ConnectionFactory { Uri = _settings.ConnectionString };
 
-            _console?.WriteLine($"{_settings.GetPublisherName()}: trying to connect to {_settings.ConnectionString} ({_settings.GetQueueOrExchangeName()})");
+            _console?.WriteLine($"{Name}: trying to connect to {_settings.ConnectionString} ({_settings.GetQueueOrExchangeName()})");
 
             using (var connection = factory.CreateConnection())
             using (var channel = connection.CreateModel())
             {
-                _console?.WriteLine($"{_settings.GetPublisherName()}: connected to {_settings.ConnectionString} ({_settings.GetQueueOrExchangeName()})");
+                _console?.WriteLine($"{Name}: connected to {_settings.ConnectionString} ({_settings.GetQueueOrExchangeName()})");
                 _publishStrategy.Configure(_settings, channel);
 
                 while (!IsStopped())
                 {
                     if (!connection.IsOpen)
                     {
-                        throw new RabbitMqBrokerException($"{_settings.GetPublisherName()}: connection to {_settings.ConnectionString} is closed");
+                        throw new RabbitMqBrokerException($"{Name}: connection to {_settings.ConnectionString} is closed");
                     }
 
                     var message = DequeueMessage();
@@ -239,11 +318,11 @@ namespace Lykke.RabbitMqBroker.Publisher
                     }
                     catch (Exception e)
                     {
-                        _console?.WriteLine($"{_settings.GetPublisherName()}: ERROR: {e.Message}");
+                        _console?.WriteLine($"{Name}: ERROR: {e.Message}");
 
                         if (_reconnectionsInARowCount > _settings.ReconnectionsCountToAlarm)
                         {
-                            _log.WriteFatalErrorAsync(_settings.GetPublisherName(), nameof(ConnectionThread), "", e).Wait();
+                            _log.WriteFatalErrorAsync(Name, nameof(ConnectionThread), "", e).Wait();
 
                             _reconnectionsInARowCount = 0;
                         }
@@ -260,7 +339,7 @@ namespace Lykke.RabbitMqBroker.Publisher
                 }
             }
 
-            _console?.WriteLine($"{_settings.GetPublisherName()}: is stopped");
+            _console?.WriteLine($"{Name}: is stopped");
         }
     }
 }

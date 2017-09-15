@@ -18,6 +18,8 @@ If you want to use a publisher partten answer next questions:
  - Which RabbitMQ server do you want to be connected using notation: https://www.rabbitmq.com/uri-spec.html 
  - How do you want serealize your model to array of bytes: implement your IMessageSerializer<TModel> interface and confugre it
  - How do you want to store unpublished messages queue, to recover when app is restarted: reference [Lykke.RabbitMq.Azure](https://www.nuget.org/packages/Lykke.RabbitMq.Azure) and use BlobPublishingQueueRepository implementation of IPublishingQueueRepository, or implement your own
+ - Are you able to lose published message? Then use DisableInMemoryQueuePersistence() to disable in-memory queue persistence
+ - Is in-memory queue's monitoring default configuration suitable for you: queue size threshold = 1000, monitor period = 10 sec? If no, call MonitorInMemoryQueue with parameters of you choise
  - Which RabbitMQ publish strategy do you want to use. Use whichever we already have or feel free to write your own IMessagePublishStrategy and do pull request; https://www.rabbitmq.com/tutorials/tutorial-three-dotnet.html
  - Specify Lykke Logging system: ILog;
  - Start the publisher;
@@ -35,9 +37,12 @@ If you want to use a publisher partten answer next questions:
 
             var connection
                 = new RabbitMqPublisher<string>(settings)
+                .SetLogger(log)
                 .SetSerializer(new JsonMessageSerializer())
                 .SetPublishStrategy(new DefaultFanoutPublishStrategy(settings))
                 .SetQueueRepository(new BlobPublishingQueueRepository(new AzureBlobStorage(ConnectionString)))
+                // OR
+                //.DisableInMemoryQueuePersistence()
                 .Start();
 
 
