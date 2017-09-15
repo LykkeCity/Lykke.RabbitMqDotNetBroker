@@ -63,7 +63,7 @@ namespace Lykke.RabbitMqBroker.Publisher
         }
 
         /// <summary>
-        /// Disables in-memory messages queue savling and loading whule starting and stopping
+        /// Disables in-memory messages queue saving and loading while starting and stopping
         /// </summary>
         /// <remarks>
         /// Mutual exclusive with <see cref="SetQueueRepository"/>, but one of which should be called
@@ -76,7 +76,7 @@ namespace Lykke.RabbitMqBroker.Publisher
         }
 
         /// <summary>
-        /// Configure in-memory messages queue size monitoring. Default monitor will be created, if you not call this method.
+        /// Configures in-memory messages queue size monitoring. Default monitor will be created, if you not call this method.
         /// Default monitor <paramref name="queueSizeThreshold"/> = 1000, <paramref name="monitorPeriod"/> = 10 seconds.
         /// </summary>
         /// <param name="queueSizeThreshold">Queue size threshold after which alarm will be enabled. Default is 1000</param>
