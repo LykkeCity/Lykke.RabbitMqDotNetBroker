@@ -32,13 +32,24 @@ namespace Lykke.RabbitMqBroker.Subscriber
         /// Creates settings for publisher's endpoint, with convention based exchange name
         /// </summary>
         /// <param name="connectionString"></param>
-        /// <param name="endpointName">Endpoint name without "lykke" namespace</param>
-        public RabbitMqSubscriptionSettings CreateForPublisher(string connectionString, string endpointName)
+        /// <param name="nameOfEndpoint">Endpoint name without "lykke" namespace</param>
+        public static RabbitMqSubscriptionSettings CreateForPublisher(string connectionString, string nameOfEndpoint)
+        {
+            return CreateForPublisher(connectionString, "lykke", nameOfEndpoint);
+        }
+
+        /// <summary>
+        /// Creates settings for publisher's endpoint, with convention based exchange name
+        /// </summary>
+        /// <param name="connectionString"></param>
+        /// <param name="namespace">Endpoint's namespace</param>
+        /// <param name="nameOfEndpoint">Endpoint's name</param>
+        public static RabbitMqSubscriptionSettings CreateForPublisher(string connectionString, string @namespace, string nameOfEndpoint)
         {
             return new RabbitMqSubscriptionSettings
             {
                 ConnectionString = connectionString,
-                ExchangeName = GetExchangeName("lykke", endpointName)
+                ExchangeName = GetExchangeName(@namespace, nameOfEndpoint)
             };
         }
 
@@ -46,33 +57,33 @@ namespace Lykke.RabbitMqBroker.Subscriber
         /// Creates settings for subscriber's endpoint, with convention based exchange, queue and dead letter queue names
         /// </summary>
         /// <param name="connectionString"></param>
-        /// <param name="nameOfSourceEndpoint">Endpoint name, to which message subscriber want to be subsribed, without "lykke" namespace</param>
-        /// <param n    ame="endpointName">Subscribers's endpoint name, without "lykke" namepsace</param>
-        public static RabbitMqSubscriptionSettings CreateForSubscriber(string connectionString, string nameOfSourceEndpoint, string endpointName)
+        /// <param name="nameOfSourceEndpoint">Endpoint's name, to which messages subscriber want to be subsribed, without "lykke" namespace</param>
+        /// <param name="nameOfEndpoint">Subscribers's endpoint name, without "lykke" namepsace</param>
+        public static RabbitMqSubscriptionSettings CreateForSubscriber(string connectionString, 
+            string nameOfSourceEndpoint, string nameOfEndpoint)
         {
+            return CreateForSubscriber(connectionString, "lykke", nameOfSourceEndpoint, "lykke", nameOfEndpoint);
+        }
 
+        /// <summary>
+        /// Creates settings for subscriber's endpoint, with convention based exchange, queue and dead letter queue names
+        /// </summary>
+        /// <param name="connectionString"></param>
+        /// <param name="namespaceOfSourceEndpoint">Endpoint's name, to which messages subscriber want to be subscribed</param>
+        /// <param name="nameOfSourceEndpoint">Endpoint's name, to which messages subscriber want to be subsribed</param>
+        /// <param name="namespaceOfEndpoint">Subscriber's endpoint namesace</param>
+        /// <param name="nameOfEndpoint">Subscribers's endpoint name</param>
+        public static RabbitMqSubscriptionSettings CreateForSubscriber(string connectionString, 
+            string namespaceOfSourceEndpoint, string nameOfSourceEndpoint, 
+            string namespaceOfEndpoint, string nameOfEndpoint)
+        {
             return new RabbitMqSubscriptionSettings
             {
                 ConnectionString = connectionString,
-                ExchangeName = GetExchangeName("lykke", nameOfSourceEndpoint),
-                QueueName = GetQueueName("lykke", nameOfSourceEndpoint, endpointName),
-                DeadLetterExchangeName = GetDeadLetterExchangeName("lykke", nameOfSourceEndpoint, endpointName)
+                ExchangeName = GetExchangeName(namespaceOfSourceEndpoint, nameOfSourceEndpoint),
+                QueueName = GetQueueName(namespaceOfSourceEndpoint, nameOfSourceEndpoint, nameOfEndpoint),
+                DeadLetterExchangeName = GetDeadLetterExchangeName(namespaceOfEndpoint, nameOfSourceEndpoint, nameOfEndpoint)
             };
-        }
-
-        public static string GetExchangeName(string @namespace, string endpointName)
-        {
-            return $"{NormalizeName(@namespace)}.{NormalizeName(endpointName)}";
-        }
-
-        public static string GetQueueName(string @namespace, string nameOfSourceEndpoint, string endpointName)
-        {
-            return $"{GetExchangeName(@namespace, nameOfSourceEndpoint)}.{NormalizeName(endpointName)}";
-        }
-
-        public static string GetDeadLetterExchangeName(string @namespace, string nameOfSourceEndpoint, string endpointName)
-        {
-            return $"{NormalizeName(@namespace)}.{NormalizeName(endpointName)}.{NormalizeName(nameOfSourceEndpoint)}.dlx";
         }
 
         public RabbitMqSubscriptionSettings MakeDurable()
@@ -101,6 +112,21 @@ namespace Lykke.RabbitMqBroker.Subscriber
             ReconnectionsCountToAlarm = timesInARow;
 
             return this;
+        }
+
+        private static string GetExchangeName(string @namespace, string endpointName)
+        {
+            return $"{NormalizeName(@namespace)}.{NormalizeName(endpointName)}";
+        }
+
+        private static string GetQueueName(string @namespace, string nameOfSourceEndpoint, string endpointName)
+        {
+            return $"{GetExchangeName(@namespace, nameOfSourceEndpoint)}.{NormalizeName(endpointName)}";
+        }
+
+        private static string GetDeadLetterExchangeName(string @namespace, string nameOfSourceEndpoint, string endpointName)
+        {
+            return $"{NormalizeName(@namespace)}.{NormalizeName(endpointName)}.{NormalizeName(nameOfSourceEndpoint)}.dlx";
         }
 
         private static string NormalizeName(string appName)
