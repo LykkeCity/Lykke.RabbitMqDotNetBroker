@@ -135,7 +135,7 @@ namespace Lykke.RabbitMqBroker.Subscriber
 
             foreach (var c in appName)
             {
-                if (char.IsLetterOrDigit(c))
+                if (char.IsLetterOrDigit(c) || c == '.' || c == '-' || c == '_')
                 {
                     sb.Append(c);
                 }
