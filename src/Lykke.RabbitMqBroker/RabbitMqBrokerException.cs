@@ -2,7 +2,8 @@
 
 namespace Lykke.RabbitMqBroker
 {
-    public class RabbitMqBrokerException : Exception
+    [Serializable]
+    public sealed class RabbitMqBrokerException : Exception
     {
         public RabbitMqBrokerException(string message) :
             base(message)

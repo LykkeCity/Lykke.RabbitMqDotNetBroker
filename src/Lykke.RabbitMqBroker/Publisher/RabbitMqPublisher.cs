@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -11,39 +10,39 @@ using RabbitMQ.Client;
 
 namespace Lykke.RabbitMqBroker.Publisher
 {
-    public class RabbitMqPublisher<TMessageModel> : 
-        IInMemoryQueuePublisher, 
-        IMessageProducer<TMessageModel>, 
-        IStartable, 
+    public class RabbitMqPublisher<TMessageModel> :
+        IMessageProducer<TMessageModel>,
+        IStartable,
         IStopable
     {
-        public int QueueSize
-        {
-            get
-            {
-                lock (_items)
-                {
-                    return _items.Count;
-                }
-            }
-        }
-
         public string Name => _settings.GetPublisherName();
-        
+
         private readonly RabbitMqSubscriptionSettings _settings;
+
+        private readonly AutoResetEvent _publishLock = new AutoResetEvent(false);
+
         private IPublishingQueueRepository<TMessageModel> _queueRepository;
         private bool _disableQueuePersistence;
-        private readonly Queue<TMessageModel> _items = new Queue<TMessageModel>();
+
         private Thread _thread;
         private IRabbitMqSerializer<TMessageModel> _serializer;
         private ILog _log;
         private IConsole _console;
         private IRabbitMqPublishStrategy _publishStrategy;
         private int _reconnectionsInARowCount;
-        private RabbitMqPublisherQueueMonitor _queueMonitor;
+        private RabbitMqPublisherQueueMonitor<TMessageModel> _queueMonitor;
+        private IPublisherBuffer<TMessageModel> _items;
+        private CancellationTokenSource _cancellationTokenSource;
+
+
+        private bool _publishSynchronously;
+
+        private Exception _lastPublishException;
+
 
         public RabbitMqPublisher(RabbitMqSubscriptionSettings settings)
         {
+
             _settings = settings;
         }
 
@@ -92,7 +91,7 @@ namespace Lykke.RabbitMqBroker.Publisher
                 throw new InvalidOperationException("Log should be set first");
             }
 
-            _queueMonitor = new RabbitMqPublisherQueueMonitor(this, queueSizeThreshold, monitorPeriod ?? TimeSpan.FromSeconds(10), _log);
+            _queueMonitor = new RabbitMqPublisherQueueMonitor<TMessageModel>(Name, _items, queueSizeThreshold, monitorPeriod ?? TimeSpan.FromSeconds(10), _log);
 
             return this;
         }
@@ -101,6 +100,15 @@ namespace Lykke.RabbitMqBroker.Publisher
         {
             _serializer = serializer;
             return this;
+        }
+
+
+        /// <summary>
+        /// Disables internal buffer. If exception occurred while publishing it will be re-thrown in the <see cref="ProduceAsync"/>
+        /// </summary>
+        public void PublishSynchronously()
+        {
+            _publishSynchronously = true;
         }
 
         public RabbitMqPublisher<TMessageModel> SetPublishStrategy(IRabbitMqPublishStrategy publishStrategy)
@@ -123,15 +131,37 @@ namespace Lykke.RabbitMqBroker.Publisher
 
         #endregion
 
+        /// <summary>
+        /// Publish <paramref name="message"/> to underlying queue
+        /// </summary>
+        /// <param name="message">Message to publish</param>
+        /// <remarks>Method is not thread safe</remarks>
+        /// <returns>Task to await</returns>
+        /// <exception cref="RabbitMqBrokerException">Some error occurred while publishing</exception>
         public Task ProduceAsync(TMessageModel message)
         {
+            if (message == null)
+            {
+                throw new ArgumentNullException(nameof(message));
+            }
             if (IsStopped())
             {
-                throw new InvalidOperationException($"{Name}: publisher is not runned, can't produce the message");
+                throw new InvalidOperationException($"{Name}: publisher is not run, can't produce the message");
             }
 
-            lock (_items)
-                _items.Enqueue(message);
+
+            _items.Enqueue(message, _cancellationTokenSource.Token);
+
+            if (_publishSynchronously)
+            {
+                _publishLock.WaitOne();
+                if (_lastPublishException != null)
+                {
+                    var tmp = _lastPublishException;
+                    _lastPublishException = null;
+                    throw new RabbitMqBrokerException("Unable to publish message. See inner exception for details", tmp);
+                }
+            }
 
             return Task.FromResult(0);
         }
@@ -152,11 +182,29 @@ namespace Lykke.RabbitMqBroker.Publisher
                 throw new InvalidOperationException($"Please, setup logger, using {nameof(SetLogger)}() method, before start publisher");
             }
 
+            if (_cancellationTokenSource == null)
+            {
+                _cancellationTokenSource = new CancellationTokenSource();
+            }
+            else
+            {
+                if (_cancellationTokenSource.IsCancellationRequested)
+                {
+                    _cancellationTokenSource = new CancellationTokenSource();
+                }
+            }
+
+            if (_items == null)
+            {
+                _items = new InMemoryBuffer<TMessageModel>();
+            }
+
             // Set defaults
             if (_queueMonitor == null)
             {
                 MonitorInMemoryQueue();
             }
+
             if (_publishStrategy == null)
             {
                 SetPublishStrategy(new DefaultFanoutPublishStrategy(_settings));
@@ -168,7 +216,7 @@ namespace Lykke.RabbitMqBroker.Publisher
 
                 LoadQueue();
 
-                _thread = new Thread(ConnectionThread);
+                _thread = new Thread(ConnectionThread) { Name = "RabbitMqPublisherLoop" };
                 _thread.Start();
 
                 _queueMonitor.Start();
@@ -192,22 +240,43 @@ namespace Lykke.RabbitMqBroker.Publisher
             var thread = _thread;
 
             if (thread == null)
+            {
                 return;
+            }
 
-            if (_publishStrategy == null)
-                _publishStrategy = new DefaultFanoutPublishStrategy(_settings);
+            try
+            {
+                if (_publishStrategy == null)
+                {
+                    _publishStrategy = new DefaultFanoutPublishStrategy(_settings);
+                }
 
-            _thread = null;
-            thread.Join();
-
-            _queueMonitor.Stop();
-
-            SaveQueue();
+                _thread = null;
+                if (_cancellationTokenSource != null)
+                {
+                    _cancellationTokenSource.Cancel();
+                    _cancellationTokenSource.Dispose();
+                }
+                _publishLock.Set();
+                thread.Join();
+                _queueMonitor.Stop();
+            }
+            finally
+            {
+                SaveQueue();
+            }
         }
-        
+
         public void Dispose()
         {
-            ((IStopable)this).Stop();
+            Stop();
+            _items?.Dispose();
+        }
+
+        internal RabbitMqPublisher<TMessageModel> SetBuffer(IPublisherBuffer<TMessageModel> buffer)
+        {
+            _items = buffer;
+            return this;
         }
 
         private void LoadQueue()
@@ -224,17 +293,14 @@ namespace Lykke.RabbitMqBroker.Publisher
                 return;
             }
 
-            lock (_items)
+            if (_items.Count > 0)
             {
-                if (_items.Any())
-                {
-                    throw new InvalidOperationException($"{Name}: messages queue already not empty, can't load persisted messages");
-                }
+                throw new InvalidOperationException($"{Name}: messages queue is already not empty, can't load persisted messages");
+            }
 
-                foreach (var item in items)
-                {
-                    _items.Enqueue(item);
-                }
+            foreach (var item in items)
+            {
+                _items.Enqueue(item, CancellationToken.None);
             }
         }
 
@@ -245,31 +311,18 @@ namespace Lykke.RabbitMqBroker.Publisher
                 return;
             }
 
-            TMessageModel[] items;
 
-            lock (_items)
-            {
-                items = _items.ToArray();
-            }
+            var items = _items.ToArray();
 
             _queueRepository.SaveAsync(items, _settings.ExchangeName).Wait();
         }
 
         private bool IsStopped()
         {
-            return _thread == null;
+            return _cancellationTokenSource == null || _cancellationTokenSource.IsCancellationRequested;
         }
 
-        private TMessageModel DequeueMessage()
-        {
-            lock (_items)
-            {
-                if (_items.Count > 0)
-                    return _items.Dequeue();
-            }
 
-            return default(TMessageModel);
-        }
 
         private void ConnectAndWrite()
         {
@@ -285,28 +338,31 @@ namespace Lykke.RabbitMqBroker.Publisher
 
                 while (!IsStopped())
                 {
+                    TMessageModel message;
+                    try
+                    {
+                        message = _items.Dequeue(_cancellationTokenSource.Token);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        return;
+                    }
+
                     if (!connection.IsOpen)
                     {
                         throw new RabbitMqBrokerException($"{Name}: connection to {_settings.ConnectionString} is closed");
                     }
 
-                    var message = DequeueMessage();
-
-                    if (message == null)
-                    {
-                        Thread.Sleep(20);
-                        continue;
-                    }
-
                     var body = _serializer.Serialize(message);
                     _publishStrategy.Publish(_settings, channel, body);
+                    _publishLock.Set();
 
                     _reconnectionsInARowCount = 0;
                 }
             }
         }
 
-        private void ConnectionThread()
+        private async void ConnectionThread()
         {
             while (!IsStopped())
             {
@@ -318,22 +374,25 @@ namespace Lykke.RabbitMqBroker.Publisher
                     }
                     catch (Exception e)
                     {
+                        _lastPublishException = e;
+                        _publishLock.Set();
+
+
                         _console?.WriteLine($"{Name}: ERROR: {e.Message}");
 
                         if (_reconnectionsInARowCount > _settings.ReconnectionsCountToAlarm)
                         {
-                            _log.WriteFatalErrorAsync(Name, nameof(ConnectionThread), "", e).Wait();
+                            await _log.WriteFatalErrorAsync(Name, nameof(ConnectionThread), string.Empty, e);
 
                             _reconnectionsInARowCount = 0;
                         }
 
                         _reconnectionsInARowCount++;
 
-                        Thread.Sleep(_settings.ReconnectionDelay);
+                        await Task.Delay(_settings.ReconnectionDelay, _cancellationTokenSource.Token);
                     }
-                }
+                } // ReSharper disable once EmptyGeneralCatchClause
                 // Saves the loop if nothing didn't help
-                // ReSharper disable once EmptyGeneralCatchClause
                 catch
                 {
                 }

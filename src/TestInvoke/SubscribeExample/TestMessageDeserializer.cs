@@ -1,5 +1,4 @@
-﻿using Lykke.RabbitMqBroker;
-using System.Text;
+﻿using System.Text;
 using Lykke.RabbitMqBroker.Subscriber;
 
 namespace TestInvoke.SubscribeExample
