@@ -54,7 +54,6 @@ namespace RabbitMqBrokerTests
         public void ShouldUseDeadLetterQueueOnException()
         {
             _subscriber = new RabbitMqSubscriber<string>(_settings, new DeadQueueErrorHandlingStrategy(Log, _settings))
-                .SetConsole(_console)
                 .SetLogger(Log)
                 .CreateDefaultBinding()
                 .SetMessageDeserializer(new DefaultStringDeserializer());
