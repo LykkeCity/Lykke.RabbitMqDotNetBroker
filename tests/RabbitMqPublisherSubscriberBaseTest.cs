@@ -71,7 +71,7 @@ namespace RabbitMqBrokerTests
 
         }
 
-        protected  string ReadFromQueue(string queueName = QueueName, bool ack = true)
+        protected string ReadFromQueue(string queueName = QueueName, bool ack = true)
         {
 
             using (var connection = _factory.CreateConnection())
@@ -100,6 +100,7 @@ namespace RabbitMqBrokerTests
             using (var connection = _factory.CreateConnection())
             using (var channel = connection.CreateModel())
             {
+                //  channel.ExchangeDeclare(DeadLetterExchangeName, "direct", true, true);
                 channel.QueueDeclare(PoisonQueueName, autoDelete: false, durable: true, exclusive: false);
                 channel.QueueBind(PoisonQueueName, DeadLetterExchangeName, _settings.RoutingKey);
             }
@@ -114,6 +115,7 @@ namespace RabbitMqBrokerTests
                 {
                     {"x-dead-letter-exchange", DeadLetterExchangeName},
                 };
+                channel.ExchangeDeclare(ExchangeName, "fanout", true, false);
                 channel.QueueDeclare(QueueName, autoDelete: false, exclusive: false, durable: _settings.IsDurable, arguments: args);
                 channel.QueueBind(QueueName, ExchangeName, _settings.RoutingKey);
             }

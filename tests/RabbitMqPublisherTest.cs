@@ -1,4 +1,5 @@
-﻿using Common;
+﻿using System.Threading.Tasks;
+using Common;
 using Lykke.RabbitMqBroker.Publisher;
 using NUnit.Framework;
 
@@ -8,7 +9,7 @@ namespace RabbitMqBrokerTests
     internal sealed class RabbitMqPublisherTest : RabbitMqPublisherSubscriberBaseTest
     {
         private RabbitMqPublisher<string> _publisher;
-        
+
         [SetUp]
         public void SetUp()
         {
@@ -18,12 +19,14 @@ namespace RabbitMqBrokerTests
             _publisher
                 .SetConsole(_console)
                 .SetPublishStrategy(new DefaultFanoutPublishStrategy(_settings))
-                .SetSerializer(new TestMessageSerializer());
+                .DisableInMemoryQueuePersistence()
+                .SetSerializer(new TestMessageSerializer())
+                .SetLogger(Log);
 
         }
 
         [Test]
-        public void SimplePublish()
+        public async Task SimplePublish()
         {
             const string expected = "Test message";
 
@@ -31,7 +34,7 @@ namespace RabbitMqBrokerTests
 
             SetupNormalQueue();
 
-            _publisher.ProduceAsync(expected).Wait();
+            await _publisher.ProduceAsync(expected);
 
             var result = ReadFromQueue();
 
@@ -40,7 +43,7 @@ namespace RabbitMqBrokerTests
         }
 
         [Test]
-        public void ShouldUseDeadLetterExchange()
+        public async Task ShouldUseDeadLetterExchange()
         {
             const string expected = "Test message";
 
@@ -52,7 +55,7 @@ namespace RabbitMqBrokerTests
             SetupNormalQueue();
             SetupPoisonQueue();
 
-            _publisher.ProduceAsync(expected).Wait();
+            await _publisher.ProduceAsync(expected);
 
 
             // Reject the message
