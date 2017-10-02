@@ -11,6 +11,8 @@ namespace RabbitMqBrokerTests
     using Lykke.RabbitMqBroker;
     using Lykke.RabbitMqBroker.Subscriber;
 
+    using Newtonsoft.Json;
+
     using NSubstitute;
     using NSubstitute.Core;
     using NSubstitute.Core.Arguments;
@@ -57,6 +59,26 @@ namespace RabbitMqBrokerTests
             Assert.That(result, Is.EqualTo(Expected));
         }
 
+        [Test]
+        public void ShouldNotPublishNonSeriazableMessage()
+        {
+            var publisher = new RabbitMqPublisher<ComplexType>(_settings);
+
+            publisher
+                .SetConsole(_console)
+                .SetPublishStrategy(new DefaultFanoutPublishStrategy(_settings))
+                .DisableInMemoryQueuePersistence()
+                .SetSerializer(new JsonMessageSerializer<ComplexType>())
+                .SetLogger(Log)
+                .Start();
+
+            var invalidObj = new ComplexType();
+            invalidObj.A = 10;
+            invalidObj.B = invalidObj;
+
+            Assert.ThrowsAsync<JsonSerializationException>(() => publisher.ProduceAsync(invalidObj));
+        }
+
 
         [Test]
         public void ShouldRethrowPublishingException()
@@ -76,6 +98,13 @@ namespace RabbitMqBrokerTests
 
 
             Assert.Throws<RabbitMqBrokerException>(() => _publisher.ProduceAsync(string.Empty).Wait());
+        }
+
+        private class ComplexType
+        {
+            public int A;
+
+            public ComplexType B;
         }
     }
 }

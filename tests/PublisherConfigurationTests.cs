@@ -2,11 +2,12 @@
 using Common.Log;
 using Lykke.RabbitMqBroker.Publisher;
 using Lykke.RabbitMqBroker.Subscriber;
-using Moq;
 using NUnit.Framework;
 
 namespace RabbitMqBrokerTests
 {
+    using NSubstitute;
+
     [TestFixture]
     internal sealed class PublisherConfigurationTests
     {
@@ -28,7 +29,7 @@ namespace RabbitMqBrokerTests
             _publisher = new RabbitMqPublisher<string>(settings);
 
             _publisher
-                .SetLogger(new Mock<ILog>().Object)
+                .SetLogger(Substitute.For<ILog>())
                 .SetPublishStrategy(new DefaultFanoutPublishStrategy(settings))
                 .SetSerializer(new JsonMessageSerializer<string>());
         }
@@ -44,7 +45,7 @@ namespace RabbitMqBrokerTests
         [Test]
         public void QueueRepositoryCanBeSet()
         {
-            _publisher.SetQueueRepository(new Mock<IPublishingQueueRepository<string>>().Object);
+            _publisher.SetQueueRepository(Substitute.For<IPublishingQueueRepository>());
 
             Assert.DoesNotThrow(() => _publisher.Start());
 

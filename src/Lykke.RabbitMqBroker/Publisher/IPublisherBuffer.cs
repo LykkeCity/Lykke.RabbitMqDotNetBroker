@@ -4,12 +4,12 @@ using System.Threading;
 
 namespace Lykke.RabbitMqBroker.Publisher
 {
-    public interface IPublisherBuffer<T> : IEnumerable<T>, IDisposable
+    public interface IPublisherBuffer : IEnumerable<byte[]>, IDisposable
     {
         int Count { get; }
 
-        void Enqueue(T message, CancellationToken cancelationToken);
+        void Enqueue(byte[] message, CancellationToken cancelationToken);
 
-        T Dequeue(CancellationToken cancelationToken);
+        byte[] Dequeue(CancellationToken cancelationToken);
     }
 }

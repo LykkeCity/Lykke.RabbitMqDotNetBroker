@@ -21,7 +21,7 @@ namespace Lykke.RabbitMqBroker.Publisher
 
         private readonly AutoResetEvent _publishLock = new AutoResetEvent(false);
 
-        private IPublishingQueueRepository<TMessageModel> _queueRepository;
+        private IPublishingQueueRepository _queueRepository;
         private bool _disableQueuePersistence;
 
         private Thread _thread;
@@ -31,9 +31,8 @@ namespace Lykke.RabbitMqBroker.Publisher
         private IRabbitMqPublishStrategy _publishStrategy;
         private int _reconnectionsInARowCount;
         private RabbitMqPublisherQueueMonitor<TMessageModel> _queueMonitor;
-        private IPublisherBuffer<TMessageModel> _items;
+        private IPublisherBuffer _items;
         private CancellationTokenSource _cancellationTokenSource;
-
 
         private bool _publishSynchronously;
 
@@ -51,10 +50,14 @@ namespace Lykke.RabbitMqBroker.Publisher
         /// <summary>
         /// Sets repository, which is used to save and load in-memory messages queue while starting and stopping 
         /// </summary>
+        /// <param name="queueRepository"> The queue Repository. </param>
         /// <remarks>
         /// Mutual exclusive with <see cref="DisableInMemoryQueuePersistence"/>, but one of which should be called
         /// </remarks>
-        public RabbitMqPublisher<TMessageModel> SetQueueRepository(IPublishingQueueRepository<TMessageModel> queueRepository)
+        /// <returns>
+        /// The <see cref="T:RabbitMqPublisher"/>.
+        /// </returns>
+        public RabbitMqPublisher<TMessageModel> SetQueueRepository(IPublishingQueueRepository queueRepository)
         {
             _queueRepository = queueRepository;
 
@@ -149,8 +152,9 @@ namespace Lykke.RabbitMqBroker.Publisher
                 throw new InvalidOperationException($"{Name}: publisher is not run, can't produce the message");
             }
 
+            var body = _serializer.Serialize(message);
 
-            _items.Enqueue(message, _cancellationTokenSource.Token);
+            _items.Enqueue(body, _cancellationTokenSource.Token);
 
             if (_publishSynchronously)
             {
@@ -196,7 +200,7 @@ namespace Lykke.RabbitMqBroker.Publisher
 
             if (_items == null)
             {
-                _items = new InMemoryBuffer<TMessageModel>();
+                _items = new InMemoryBuffer();
             }
 
             // Set defaults
@@ -273,7 +277,7 @@ namespace Lykke.RabbitMqBroker.Publisher
             _items?.Dispose();
         }
 
-        internal RabbitMqPublisher<TMessageModel> SetBuffer(IPublisherBuffer<TMessageModel> buffer)
+        internal RabbitMqPublisher<TMessageModel> SetBuffer(IPublisherBuffer buffer)
         {
             _items = buffer;
             return this;
@@ -338,7 +342,7 @@ namespace Lykke.RabbitMqBroker.Publisher
 
                 while (!IsStopped())
                 {
-                    TMessageModel message;
+                    byte[] message;
                     try
                     {
                         message = _items.Dequeue(_cancellationTokenSource.Token);
@@ -353,8 +357,8 @@ namespace Lykke.RabbitMqBroker.Publisher
                         throw new RabbitMqBrokerException($"{Name}: connection to {_settings.ConnectionString} is closed");
                     }
 
-                    var body = _serializer.Serialize(message);
-                    _publishStrategy.Publish(_settings, channel, body);
+              
+                    _publishStrategy.Publish(_settings, channel, message);
                     _publishLock.Set();
 
                     _reconnectionsInARowCount = 0;

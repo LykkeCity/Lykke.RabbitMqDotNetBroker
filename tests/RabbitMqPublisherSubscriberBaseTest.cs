@@ -143,15 +143,15 @@ namespace RabbitMqBrokerTests
             }
         }
 
-        protected class TestBuffer : IPublisherBuffer<string>
+        protected class TestBuffer : IPublisherBuffer
         {
-            private readonly BlockingCollection<string> _collection = new BlockingCollection<string>();
+            private readonly BlockingCollection<byte[]> _collection = new BlockingCollection<byte[]>();
 
             public readonly ManualResetEventSlim Gate = new ManualResetEventSlim(false);
 
-            public IEnumerator<string> GetEnumerator()
+            public IEnumerator<byte[]> GetEnumerator()
             {
-                return ((IEnumerable<string>)_collection).GetEnumerator();
+                return ((IEnumerable<byte[]>)_collection).GetEnumerator();
             }
 
             IEnumerator IEnumerable.GetEnumerator()
@@ -166,12 +166,12 @@ namespace RabbitMqBrokerTests
 
             public int Count => _collection.Count;
 
-            public void Enqueue(string message, CancellationToken cancelationToken)
+            public void Enqueue(byte[] message, CancellationToken cancelationToken)
             {
                 _collection.Add(message);
             }
 
-            public string Dequeue(CancellationToken cancelationToken)
+            public byte[] Dequeue(CancellationToken cancelationToken)
             {
                 Gate.Wait();
                 return _collection.Take(cancelationToken);
