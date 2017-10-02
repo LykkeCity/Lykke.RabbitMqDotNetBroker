@@ -29,7 +29,7 @@ namespace RabbitMqBrokerTests
         [Test]
         public void SuccessfulPath()
         {
-            const string expected = "Test message";
+            const string expected = "GetDefaultHost message";
 
             string result = null;
             SetupNormalQueue();
@@ -54,12 +54,11 @@ namespace RabbitMqBrokerTests
         public void ShouldUseDeadLetterQueueOnException()
         {
             _subscriber = new RabbitMqSubscriber<string>(_settings, new DeadQueueErrorHandlingStrategy(Log, _settings))
-                .SetConsole(_console)
                 .SetLogger(Log)
                 .CreateDefaultBinding()
                 .SetMessageDeserializer(new DefaultStringDeserializer());
 
-            const string expected = "Test message";
+            const string expected = "GetDefaultHost message";
 
             SetupNormalQueue();
             PublishToQueue(expected);
@@ -93,7 +92,7 @@ namespace RabbitMqBrokerTests
 
         private void PublishToQueue(string message)
         {
-            var factory = new ConnectionFactory { Uri = ConnectionString };
+            var factory = new ConnectionFactory { Uri = RabbitConnectionString };
 
             using (var connection = factory.CreateConnection())
             using (var channel = connection.CreateModel())

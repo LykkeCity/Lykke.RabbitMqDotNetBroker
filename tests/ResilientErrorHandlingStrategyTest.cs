@@ -1,11 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 using Common.Log;
 using Lykke.RabbitMqBroker;
 using Lykke.RabbitMqBroker.Subscriber;
 using NSubstitute;
-using NUnit.Framework.Internal;
 using NUnit.Framework;
 
 namespace RabbitMqBrokerTests

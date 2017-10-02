@@ -3,9 +3,10 @@ using System.Threading.Tasks;
 
 namespace Lykke.RabbitMqBroker.Publisher
 {
-    public interface IPublishingQueueRepository<TMessageModel>
+    public interface IPublishingQueueRepository
     {
-        Task SaveAsync(IReadOnlyCollection<TMessageModel> items, string exchangeName);
-        Task<IReadOnlyCollection<TMessageModel>> LoadAsync(string exchangeName);
-    } 
+        Task SaveAsync(IReadOnlyCollection<byte[]> items, string exchangeName);
+
+        Task<IReadOnlyCollection<byte[]>> LoadAsync(string exchangeName);
+    }
 }
