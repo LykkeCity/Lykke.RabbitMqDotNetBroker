@@ -111,6 +111,7 @@ namespace Lykke.RabbitMqBroker.Publisher
         /// </summary>
         public RabbitMqPublisher<TMessageModel> PublishSynchronously()
         {
+            DisableInMemoryQueuePersistence();
             _publishSynchronously = true;
             return this;
         }
@@ -177,10 +178,6 @@ namespace Lykke.RabbitMqBroker.Publisher
             if (_queueRepository == null ^ _disableQueuePersistence)
             {
                 throw new InvalidOperationException($"Please, do one of - setup queue repository, using {nameof(SetQueueRepository)}() method, or disable queue persistence using {nameof(DisableInMemoryQueuePersistence)}() method, before start publisher");
-            }
-            if (!_disableQueuePersistence && _publishSynchronously)
-            {
-                throw new InvalidOperationException($"Please either disable queue persistence, using {nameof(DisableInMemoryQueuePersistence)}() method, or do not call {nameof(PublishSynchronously)}");
             }
             if (_serializer == null)
             {
