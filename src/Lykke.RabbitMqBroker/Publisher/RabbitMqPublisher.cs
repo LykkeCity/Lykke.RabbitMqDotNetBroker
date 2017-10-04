@@ -109,9 +109,10 @@ namespace Lykke.RabbitMqBroker.Publisher
         /// <summary>
         /// Disables internal buffer. If exception occurred while publishing it will be re-thrown in the <see cref="ProduceAsync"/>
         /// </summary>
-        public void PublishSynchronously()
+        public RabbitMqPublisher<TMessageModel> PublishSynchronously()
         {
             _publishSynchronously = true;
+            return this;
         }
 
         public RabbitMqPublisher<TMessageModel> SetPublishStrategy(IRabbitMqPublishStrategy publishStrategy)
