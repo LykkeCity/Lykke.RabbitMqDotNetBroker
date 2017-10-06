@@ -18,7 +18,7 @@ namespace Lykke.RabbitMqBroker.Publisher
 
         public void Enqueue(byte[] message, CancellationToken cancelationToken)
         {
-            _items.Add(message);
+            _items.Add(message, cancelationToken);
         }
 
         public byte[] Dequeue(CancellationToken cancelationToken)
