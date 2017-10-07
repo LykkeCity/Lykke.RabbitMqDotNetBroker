@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Threading.Tasks;
 using Common;
 using Common.Log;
@@ -213,16 +213,9 @@ namespace Lykke.RabbitMqBroker.Subscriber
                 throw new InvalidOperationException("Please, specify log");
             }
 
-            if (_cancellationTokenSource == null)
+            if (_cancellationTokenSource == null || _cancellationTokenSource.IsCancellationRequested)
             {
                 _cancellationTokenSource = new CancellationTokenSource();
-            }
-            else
-            {
-                if (_cancellationTokenSource.IsCancellationRequested)
-                {
-                    _cancellationTokenSource = new CancellationTokenSource();
-                }
             }
 
             if (_messageReadStrategy == null)
