@@ -188,16 +188,9 @@ namespace Lykke.RabbitMqBroker.Publisher
                 throw new InvalidOperationException($"Please, setup logger, using {nameof(SetLogger)}() method, before start publisher");
             }
 
-            if (_cancellationTokenSource == null)
+            if (_cancellationTokenSource == null || _cancellationTokenSource.IsCancellationRequested)
             {
                 _cancellationTokenSource = new CancellationTokenSource();
-            }
-            else
-            {
-                if (_cancellationTokenSource.IsCancellationRequested)
-                {
-                    _cancellationTokenSource = new CancellationTokenSource();
-                }
             }
 
             if (_items == null)

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Threading.Tasks;
 using Common;
 using Common.Log;
@@ -30,6 +30,7 @@ namespace Lykke.RabbitMqBroker.Subscriber
         private IMessageReadStrategy _messageReadStrategy;
         private IConsole _console;
         private int _reconnectionsInARowCount;
+        private CancellationTokenSource _cancellationTokenSource;
 
         public RabbitMqSubscriber(RabbitMqSubscriptionSettings settings, IErrorHandlingStrategy errorHandlingStrategy)
         {
@@ -93,10 +94,10 @@ namespace Lykke.RabbitMqBroker.Subscriber
 
         private bool IsStopped()
         {
-            return _thread == null;
+            return _cancellationTokenSource == null || _cancellationTokenSource.IsCancellationRequested;
         }
 
-        private void ReadThread()
+        private async void ReadThread()
         {
             while (!IsStopped())
             {
@@ -119,7 +120,7 @@ namespace Lykke.RabbitMqBroker.Subscriber
 
                         _reconnectionsInARowCount++;
 
-                        Thread.Sleep(_settings.ReconnectionDelay);
+                        await Task.Delay(_settings.ReconnectionDelay, _cancellationTokenSource.Token);
                     }
                 }
                 // Saves the loop if nothing didn't help
@@ -212,6 +213,11 @@ namespace Lykke.RabbitMqBroker.Subscriber
                 throw new InvalidOperationException("Please, specify log");
             }
 
+            if (_cancellationTokenSource == null || _cancellationTokenSource.IsCancellationRequested)
+            {
+                _cancellationTokenSource = new CancellationTokenSource();
+            }
+
             if (_messageReadStrategy == null)
                 CreateDefaultBinding();
 
@@ -237,6 +243,13 @@ namespace Lykke.RabbitMqBroker.Subscriber
                 return;
 
             _thread = null;
+
+            if (_cancellationTokenSource != null)
+            {
+                _cancellationTokenSource.Cancel();
+                _cancellationTokenSource.Dispose();
+            }
+
             thread.Join();
         }
 
