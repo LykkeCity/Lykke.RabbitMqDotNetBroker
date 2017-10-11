@@ -256,7 +256,8 @@ namespace Lykke.RabbitMqBroker.Publisher
                     _cancellationTokenSource.Cancel();
                     _cancellationTokenSource.Dispose();
                 }
-                _publishLock.Set();
+                if (_publishSynchronously)
+                    _publishLock.Set();
                 thread.Join();
                 _queueMonitor.Stop();
             }
@@ -352,9 +353,9 @@ namespace Lykke.RabbitMqBroker.Publisher
                         throw new RabbitMqBrokerException($"{Name}: connection to {_settings.ConnectionString} is closed");
                     }
 
-              
                     _publishStrategy.Publish(_settings, channel, message);
-                    _publishLock.Set();
+                    if (_publishSynchronously)
+                        _publishLock.Set();
 
                     _reconnectionsInARowCount = 0;
                 }
@@ -374,8 +375,8 @@ namespace Lykke.RabbitMqBroker.Publisher
                     catch (Exception e)
                     {
                         _lastPublishException = e;
-                        _publishLock.Set();
-
+                        if (_publishSynchronously)
+                            _publishLock.Set();
 
                         _console?.WriteLine($"{Name}: ERROR: {e.Message}");
 
