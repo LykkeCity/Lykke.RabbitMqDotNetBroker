@@ -50,7 +50,8 @@ namespace Lykke.RabbitMqBroker
 
                 for (int i = 0; i < _retryNum; i++)
                 {
-                    Task.Delay(_retryTimeout, cancellationToken);
+                    Task.Delay(_retryTimeout, cancellationToken).Wait(cancellationToken);
+
                     try
                     {
                         handler();
