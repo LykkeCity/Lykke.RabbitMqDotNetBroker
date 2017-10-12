@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading;
 using Common.Log;
 using Lykke.RabbitMqBroker.Subscriber;
 
@@ -25,7 +26,7 @@ namespace Lykke.RabbitMqBroker
             _settings = settings;
             _next = next;
         }
-        public void Execute(Action handler, IMessageAcceptor ma)
+        public void Execute(Action handler, IMessageAcceptor ma, CancellationToken cancellationToken)
         {
             try
             {
@@ -34,14 +35,15 @@ namespace Lykke.RabbitMqBroker
             }
             catch (Exception ex)
             {
-                _log.WriteErrorAsync(_settings.GetSubscriberName(), "Message handling", "", ex);
+                // ReSharper disable once MethodSupportsCancellation
+                _log.WriteErrorAsync(_settings.GetSubscriberName(), "Message handling", "", ex).Wait();
                 if (_next == null)
                 {
                     ma.Accept();
                 }
                 else
                 {
-                    _next.Execute(handler, ma);
+                    _next.Execute(handler, ma, cancellationToken);
                 }
             }
         }

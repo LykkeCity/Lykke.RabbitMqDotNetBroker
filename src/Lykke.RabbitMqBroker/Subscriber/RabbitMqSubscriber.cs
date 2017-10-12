@@ -22,6 +22,7 @@ namespace Lykke.RabbitMqBroker.Subscriber
     public class RabbitMqSubscriber<TTopicModel> : IStartable, IStopable, IMessageConsumer<TTopicModel>
     {
         private Func<TTopicModel, Task> _eventHandler;
+        private Func<TTopicModel, CancellationToken, Task> _cancallableEventHandler;
         private readonly RabbitMqSubscriptionSettings _settings;
         private readonly IErrorHandlingStrategy _errorHandlingStrategy;
         private ILog _log;
@@ -58,6 +59,14 @@ namespace Lykke.RabbitMqBroker.Subscriber
         public RabbitMqSubscriber<TTopicModel> Subscribe(Func<TTopicModel, Task> callback)
         {
             _eventHandler = callback;
+            _cancallableEventHandler = null;
+            return this;
+        }
+
+        public RabbitMqSubscriber<TTopicModel> Subscribe(Func<TTopicModel, CancellationToken, Task> callback)
+        {
+            _cancallableEventHandler = callback;
+            _eventHandler = null;
             return this;
         }
 
@@ -182,15 +191,23 @@ namespace Lykke.RabbitMqBroker.Subscriber
 
                 var ma = new MessageAcceptor(channel, tag);
 
-                _errorHandlingStrategy.Execute(() => _eventHandler(model).Wait(), ma);
-
+                if (_cancallableEventHandler != null)
+                {
+                    _errorHandlingStrategy.Execute(
+                        () => _cancallableEventHandler(model, _cancellationTokenSource.Token).Wait(), 
+                        ma, 
+                        _cancellationTokenSource.Token);
+                }
+                else
+                {
+                    _errorHandlingStrategy.Execute(() => _eventHandler(model).Wait(), ma, _cancellationTokenSource.Token);
+                }
             }
             catch (Exception ex)
             {
                 _console?.WriteLine("Error in error handling strategy");
                 _log.WriteErrorAsync(GetType().Name, "Error in error handling strategy", "Message Receiving", ex).Wait();
             }
-
         }
 
         void IStartable.Start()
@@ -204,7 +221,7 @@ namespace Lykke.RabbitMqBroker.Subscriber
             {
                 throw new InvalidOperationException("Please, specify message deserializer");
             }
-            if (_eventHandler == null)
+            if (_eventHandler == null && _cancallableEventHandler == null)
             {
                 throw new InvalidOperationException("Please, specify message handler");
             }
