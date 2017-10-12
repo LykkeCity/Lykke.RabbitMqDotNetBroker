@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading;
+using System.Threading.Tasks;
 using Common.Log;
 using Lykke.RabbitMqBroker.Subscriber;
 
@@ -30,7 +31,7 @@ namespace Lykke.RabbitMqBroker
             _retryNum = retryNum;
             _next = next;
         }
-        public void Execute(Action handler, IMessageAcceptor ma)
+        public void Execute(Action handler, IMessageAcceptor ma, CancellationToken cancellationToken)
         {
             try
             {
@@ -39,11 +40,17 @@ namespace Lykke.RabbitMqBroker
             }
             catch (Exception ex)
             {
-                _log.WriteWarningAsync(nameof(ResilientErrorHandlingStrategy), _settings.GetSubscriberName(), "Message handling", $"Failed to handle the message for the first time. Retry in {_retryTimeout.Seconds} sec. Exception {ex}");
+                // ReSharper disable once MethodSupportsCancellation
+                _log.WriteWarningAsync(
+                        nameof(ResilientErrorHandlingStrategy),
+                        _settings.GetSubscriberName(),
+                        "Message handling",
+                        $"Failed to handle the message for the first time. Retry in {_retryTimeout.Seconds} sec. Exception {ex}")
+                    .Wait();
 
                 for (int i = 0; i < _retryNum; i++)
                 {
-                    Thread.Sleep(_retryTimeout);
+                    Task.Delay(_retryTimeout, cancellationToken);
                     try
                     {
                         handler();
@@ -51,7 +58,13 @@ namespace Lykke.RabbitMqBroker
                     }
                     catch (Exception ex2)
                     {
-                        _log.WriteWarningAsync(nameof(ResilientErrorHandlingStrategy), _settings.GetSubscriberName(), "Message handling", $"Failed to handle the message for the {i + 1} time. Retry in {_retryTimeout.Seconds} sec. Exception {ex2}");
+                        // ReSharper disable once MethodSupportsCancellation
+                        _log.WriteWarningAsync(
+                                nameof(ResilientErrorHandlingStrategy),
+                                _settings.GetSubscriberName(),
+                                "Message handling",
+                                $"Failed to handle the message for the {i + 1} time. Retry in {_retryTimeout.Seconds} sec. Exception {ex2}")
+                            .Wait();
                     }
                 }
                 if (_next == null)
@@ -60,7 +73,7 @@ namespace Lykke.RabbitMqBroker
                 }
                 else
                 {
-                    _next.Execute(handler, ma);
+                    _next.Execute(handler, ma, cancellationToken);
                 }
             }
         }

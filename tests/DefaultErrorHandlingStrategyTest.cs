@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading;
 using Common.Log;
 using Lykke.RabbitMqBroker;
 using Lykke.RabbitMqBroker.Subscriber;
@@ -30,7 +31,7 @@ namespace RabbitMqBrokerTests
         {
             var handler = new Action(() => { });
             var acceptor = Substitute.For<IMessageAcceptor>();
-            _strategy.Execute(handler, acceptor);
+            _strategy.Execute(handler, acceptor, CancellationToken.None);
 
             acceptor.Received(1).Accept();
         }
@@ -44,9 +45,9 @@ namespace RabbitMqBrokerTests
             var handler = new Action(() => throw new Exception());
             var acceptor = Substitute.For<IMessageAcceptor>();
 
-            _strategy.Execute(handler, acceptor);
+            _strategy.Execute(handler, acceptor, CancellationToken.None);
 
-            nextHandler.Received(1).Execute(handler, acceptor);
+            nextHandler.Received(1).Execute(handler, acceptor, CancellationToken.None);
         }
     }
 }
