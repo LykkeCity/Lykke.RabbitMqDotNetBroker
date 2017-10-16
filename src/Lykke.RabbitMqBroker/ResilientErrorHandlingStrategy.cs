@@ -64,7 +64,7 @@ namespace Lykke.RabbitMqBroker
                     {
                         handler();
 
-                        // After some retries message is processed, so no more retries needed
+                        // The message was processed after all, so no more retries needed
 
                         return;
                     }
