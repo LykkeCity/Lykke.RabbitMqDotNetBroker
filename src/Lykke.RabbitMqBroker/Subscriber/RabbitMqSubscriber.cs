@@ -183,30 +183,29 @@ namespace Lykke.RabbitMqBroker.Subscriber
 
         private void MessageReceived(BasicDeliverEventArgs basicDeliverEventArgs, IModel channel)
         {
+            var tag = basicDeliverEventArgs.DeliveryTag;
+            var body = basicDeliverEventArgs.Body;
+            var model = _messageDeserializer.Deserialize(body);
+
+            var ma = new MessageAcceptor(channel, tag);
+
             try
             {
-                var tag = basicDeliverEventArgs.DeliveryTag;
-                var body = basicDeliverEventArgs.Body;
-                var model = _messageDeserializer.Deserialize(body);
-
-                var ma = new MessageAcceptor(channel, tag);
-
                 if (_cancallableEventHandler != null)
                 {
                     _errorHandlingStrategy.Execute(
-                        () => _cancallableEventHandler(model, _cancellationTokenSource.Token).Wait(), 
-                        ma, 
+                        () => _cancallableEventHandler(model, _cancellationTokenSource.Token).Wait(),
+                        ma,
                         _cancellationTokenSource.Token);
                 }
                 else
                 {
-                    _errorHandlingStrategy.Execute(() => _eventHandler(model).Wait(), ma, _cancellationTokenSource.Token);
+                    _errorHandlingStrategy.Execute(() => _eventHandler(model).Wait(), ma,
+                        _cancellationTokenSource.Token);
                 }
             }
-            catch (Exception ex)
+            catch (OperationCanceledException)
             {
-                _console?.WriteLine("Error in error handling strategy");
-                _log.WriteErrorAsync(GetType().Name, "Error in error handling strategy", "Message Receiving", ex).Wait();
             }
         }
 
@@ -261,13 +260,11 @@ namespace Lykke.RabbitMqBroker.Subscriber
 
             _thread = null;
 
-            if (_cancellationTokenSource != null)
-            {
-                _cancellationTokenSource.Cancel();
-                _cancellationTokenSource.Dispose();
-            }
+            _cancellationTokenSource?.Cancel();
 
             thread.Join();
+
+            _cancellationTokenSource?.Dispose();
         }
 
         public void Dispose()

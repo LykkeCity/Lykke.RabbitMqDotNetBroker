@@ -36,7 +36,18 @@ namespace Lykke.RabbitMqBroker
             try
             {
                 handler();
-                ma.Accept();
+                try
+                {
+                    ma.Accept();
+                }
+                catch (Exception ex)
+                {
+                    throw new RabbitMqAckFailedException("Failed to ack the message", ex);
+                }
+            }
+            catch (RabbitMqAckFailedException)
+            {
+                throw;
             }
             catch (Exception ex)
             {
@@ -50,12 +61,24 @@ namespace Lykke.RabbitMqBroker
 
                 for (int i = 0; i < _retryNum; i++)
                 {
-                    Task.Delay(_retryTimeout, cancellationToken).Wait(cancellationToken);
+                    // ReSharper disable once MethodSupportsCancellation
+                    Task.Delay(_retryTimeout, cancellationToken).Wait();
 
                     try
                     {
                         handler();
-                        ma.Accept();
+                        try
+                        {
+                            ma.Accept();
+                        }
+                        catch (Exception ex2)
+                        {
+                            throw new RabbitMqAckFailedException("Failed to ack the message", ex2);
+                        }
+                    }
+                    catch (RabbitMqAckFailedException)
+                    {
+                        throw;
                     }
                     catch (Exception ex2)
                     {
@@ -68,6 +91,7 @@ namespace Lykke.RabbitMqBroker
                             .Wait();
                     }
                 }
+
                 if (_next == null)
                 {
                     ma.Accept();
