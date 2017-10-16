@@ -251,14 +251,16 @@ namespace Lykke.RabbitMqBroker.Publisher
                 }
 
                 _thread = null;
-                if (_cancellationTokenSource != null)
-                {
-                    _cancellationTokenSource.Cancel();
-                    _cancellationTokenSource.Dispose();
-                }
+
+                _cancellationTokenSource?.Cancel();
+
                 if (_publishSynchronously)
                     _publishLock.Set();
+
                 thread.Join();
+
+                _cancellationTokenSource?.Dispose();
+
                 _queueMonitor.Stop();
             }
             finally

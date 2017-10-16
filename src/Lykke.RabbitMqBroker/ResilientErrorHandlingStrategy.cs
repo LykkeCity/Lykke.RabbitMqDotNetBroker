@@ -33,13 +33,16 @@ namespace Lykke.RabbitMqBroker
         }
         public void Execute(Action handler, IMessageAcceptor ma, CancellationToken cancellationToken)
         {
+            var isAllAttemptsFailed = false;
+
             try
             {
                 handler();
-                ma.Accept();
             }
             catch (Exception ex)
             {
+                // Message processing is failed, entering to the retries
+
                 // ReSharper disable once MethodSupportsCancellation
                 _log.WriteWarningAsync(
                         nameof(ResilientErrorHandlingStrategy),
@@ -48,14 +51,22 @@ namespace Lykke.RabbitMqBroker
                         $"Failed to handle the message for the first time. Retry in {_retryTimeout.Seconds} sec. Exception {ex}")
                     .Wait();
 
+                // Retries loop
+
                 for (int i = 0; i < _retryNum; i++)
                 {
-                    Task.Delay(_retryTimeout, cancellationToken).Wait(cancellationToken);
+                    // Adding delay between attempts
+
+                    // ReSharper disable once MethodSupportsCancellation
+                    Task.Delay(_retryTimeout, cancellationToken).Wait();
 
                     try
                     {
                         handler();
-                        ma.Accept();
+
+                        // The message was processed after all, so no more retries needed
+
+                        return;
                     }
                     catch (Exception ex2)
                     {
@@ -68,13 +79,29 @@ namespace Lykke.RabbitMqBroker
                             .Wait();
                     }
                 }
+
+                // All attempts is failed, need to call next strategy in the chain
+
+                isAllAttemptsFailed = true;
+
                 if (_next == null)
                 {
+                    // Swallow the message if no more strategy is chained
+
                     ma.Accept();
                 }
                 else
                 {
                     _next.Execute(handler, ma, cancellationToken);
+                }
+            }
+            finally
+            {
+                // Finally, the message should be accepted, if it was successfully processed
+
+                if (!isAllAttemptsFailed)
+                {
+                    ma.Accept();
                 }
             }
         }
