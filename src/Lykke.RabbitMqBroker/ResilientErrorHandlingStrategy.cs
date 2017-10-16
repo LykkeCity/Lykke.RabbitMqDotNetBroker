@@ -33,24 +33,16 @@ namespace Lykke.RabbitMqBroker
         }
         public void Execute(Action handler, IMessageAcceptor ma, CancellationToken cancellationToken)
         {
+            var isAllAttemptsFailed = false;
+
             try
             {
                 handler();
-                try
-                {
-                    ma.Accept();
-                }
-                catch (Exception ex)
-                {
-                    throw new RabbitMqAckFailedException("Failed to ack the message", ex);
-                }
-            }
-            catch (RabbitMqAckFailedException)
-            {
-                throw;
             }
             catch (Exception ex)
             {
+                // Message processing is failed, entering to the retries
+
                 // ReSharper disable once MethodSupportsCancellation
                 _log.WriteWarningAsync(
                         nameof(ResilientErrorHandlingStrategy),
@@ -59,26 +51,22 @@ namespace Lykke.RabbitMqBroker
                         $"Failed to handle the message for the first time. Retry in {_retryTimeout.Seconds} sec. Exception {ex}")
                     .Wait();
 
+                // Retries loop
+
                 for (int i = 0; i < _retryNum; i++)
                 {
+                    // Adding delay between attempts
+
                     // ReSharper disable once MethodSupportsCancellation
                     Task.Delay(_retryTimeout, cancellationToken).Wait();
 
                     try
                     {
                         handler();
-                        try
-                        {
-                            ma.Accept();
-                        }
-                        catch (Exception ex2)
-                        {
-                            throw new RabbitMqAckFailedException("Failed to ack the message", ex2);
-                        }
-                    }
-                    catch (RabbitMqAckFailedException)
-                    {
-                        throw;
+
+                        // After some retries message is processed, so no more retries needed
+
+                        return;
                     }
                     catch (Exception ex2)
                     {
@@ -92,13 +80,28 @@ namespace Lykke.RabbitMqBroker
                     }
                 }
 
+                // All attempts is failed, need to call next strategy in the chain
+
+                isAllAttemptsFailed = true;
+
                 if (_next == null)
                 {
+                    // Swallow the message if no more strategy is chained
+
                     ma.Accept();
                 }
                 else
                 {
                     _next.Execute(handler, ma, cancellationToken);
+                }
+            }
+            finally
+            {
+                // Finally, the message should be accepted, if it was successfully processed
+
+                if (!isAllAttemptsFailed)
+                {
+                    ma.Accept();
                 }
             }
         }
