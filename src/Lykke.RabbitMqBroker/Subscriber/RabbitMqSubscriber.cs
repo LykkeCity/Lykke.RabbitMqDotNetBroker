@@ -183,29 +183,37 @@ namespace Lykke.RabbitMqBroker.Subscriber
 
         private void MessageReceived(BasicDeliverEventArgs basicDeliverEventArgs, IModel channel)
         {
-            var tag = basicDeliverEventArgs.DeliveryTag;
-            var body = basicDeliverEventArgs.Body;
-            var model = _messageDeserializer.Deserialize(body);
-
-            var ma = new MessageAcceptor(channel, tag);
-
             try
             {
-                if (_cancallableEventHandler != null)
+                var tag = basicDeliverEventArgs.DeliveryTag;
+                var body = basicDeliverEventArgs.Body;
+                var model = _messageDeserializer.Deserialize(body);
+
+                var ma = new MessageAcceptor(channel, tag);
+
+                try
                 {
-                    _errorHandlingStrategy.Execute(
-                        () => _cancallableEventHandler(model, _cancellationTokenSource.Token).Wait(),
-                        ma,
-                        _cancellationTokenSource.Token);
+                    if (_cancallableEventHandler != null)
+                    {
+                        _errorHandlingStrategy.Execute(
+                            () => _cancallableEventHandler(model, _cancellationTokenSource.Token).Wait(),
+                            ma,
+                            _cancellationTokenSource.Token);
+                    }
+                    else
+                    {
+                        _errorHandlingStrategy.Execute(() => _eventHandler(model).Wait(), ma,
+                            _cancellationTokenSource.Token);
+                    }
                 }
-                else
+                catch (OperationCanceledException)
                 {
-                    _errorHandlingStrategy.Execute(() => _eventHandler(model).Wait(), ma,
-                        _cancellationTokenSource.Token);
                 }
             }
-            catch (OperationCanceledException)
+            catch (Exception ex)
             {
+                _console?.WriteLine("Failed to process the message");
+                _log.WriteErrorAsync(GetType().Name, nameof(MessageReceived), "Failed to process the message", ex).Wait();
             }
         }
 
