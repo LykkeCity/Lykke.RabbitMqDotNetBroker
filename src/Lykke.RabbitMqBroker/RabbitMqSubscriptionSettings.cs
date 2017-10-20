@@ -140,8 +140,8 @@ namespace Lykke.RabbitMqBroker.Subscriber
                     sb.Append(c);
                 }
             }
-               
-            return sb.ToString().ToLower();
+
+            return sb.ToString();
         }
     }
 }
