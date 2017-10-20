@@ -131,17 +131,7 @@ namespace Lykke.RabbitMqBroker.Subscriber
 
         private static string NormalizeName(string appName)
         {
-            var sb = new StringBuilder();
-
-            foreach (var c in appName)
-            {
-                if (char.IsLetterOrDigit(c) || c == '.' || c == '-' || c == '_')
-                {
-                    sb.Append(c);
-                }
-            }
-
-            return sb.ToString();
+            return appName;
         }
     }
 }
