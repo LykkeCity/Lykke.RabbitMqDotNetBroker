@@ -44,7 +44,7 @@ namespace Lykke.RabbitMqBroker.Subscriber
             channel.QueueBind(
                 queue: settings.QueueName,
                 exchange: settings.ExchangeName,
-                routingKey: _routingKey);
+                routingKey: string.IsNullOrWhiteSpace(_routingKey) ? settings.RoutingKey : _routingKey);
 
             return settings.QueueName;
         }
