@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Linq;
-using System.Reflection;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Autofac;
@@ -97,7 +95,7 @@ namespace Lykke.RabbitMqBroker.Publisher
                 throw new InvalidOperationException("Log should be set first");
             }
 
-            _queueMonitor = new RabbitMqPublisherQueueMonitor<TMessageModel>(Name, _items, queueSizeThreshold, monitorPeriod ?? TimeSpan.FromSeconds(10), _log);
+            _queueMonitor = new RabbitMqPublisherQueueMonitor<TMessageModel>(Name, _items, queueSizeThreshold, monitorPeriod ?? TimeSpan.FromSeconds(60), _log);
 
             return this;
         }
