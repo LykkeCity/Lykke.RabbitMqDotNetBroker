@@ -1,11 +1,14 @@
 ﻿using System;
 using System.Linq;
+using System.Reflection;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Autofac;
 using Common;
 using Common.Log;
 using Lykke.RabbitMqBroker.Subscriber;
+using Microsoft.Extensions.PlatformAbstractions;
 using RabbitMQ.Client;
 
 namespace Lykke.RabbitMqBroker.Publisher
@@ -165,6 +168,10 @@ namespace Lykke.RabbitMqBroker.Publisher
                 {
                     var tmp = _lastPublishException;
                     _lastPublishException = null;
+                    while (_items.Count > 0) // An exception occurred before we get a message from the queue. Drop it.
+                    {
+                        _items.Dequeue(CancellationToken.None);
+                    }
                     throw new RabbitMqBrokerException("Unable to publish message. See inner exception for details", tmp);
                 }
             }
@@ -332,7 +339,8 @@ namespace Lykke.RabbitMqBroker.Publisher
 
             _console?.WriteLine($"{Name}: trying to connect to {_settings.ConnectionString} ({_settings.GetQueueOrExchangeName()})");
 
-            using (var connection = factory.CreateConnection())
+            var cn = $"{PlatformServices.Default.Application.ApplicationName} {PlatformServices.Default.Application.ApplicationVersion}";
+            using (var connection = factory.CreateConnection(cn))
             using (var channel = connection.CreateModel())
             {
                 _console?.WriteLine($"{Name}: connected to {_settings.ConnectionString} ({_settings.GetQueueOrExchangeName()})");
@@ -394,7 +402,7 @@ namespace Lykke.RabbitMqBroker.Publisher
                         await Task.Delay(_settings.ReconnectionDelay, _cancellationTokenSource.Token);
                     }
                 } // ReSharper disable once EmptyGeneralCatchClause
-                // Saves the loop if nothing didn't help
+                  // Saves the loop if nothing didn't help
                 catch
                 {
                 }
