@@ -6,6 +6,7 @@ using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using System.Threading;
 using Autofac;
+using Microsoft.Extensions.PlatformAbstractions;
 
 namespace Lykke.RabbitMqBroker.Subscriber
 {
@@ -147,7 +148,8 @@ namespace Lykke.RabbitMqBroker.Subscriber
             var factory = new ConnectionFactory { Uri = _settings.ConnectionString };
             _console?.WriteLine($"{_settings.GetSubscriberName()}: trying to connect to {_settings.ConnectionString} ({_settings.GetQueueOrExchangeName()})");
 
-            using (var connection = factory.CreateConnection())
+            var cn = $"{PlatformServices.Default.Application.ApplicationName} {PlatformServices.Default.Application.ApplicationVersion}";
+            using (var connection = factory.CreateConnection(cn))
             using (var channel = connection.CreateModel())
             {
                 _console?.WriteLine($"{_settings.GetSubscriberName()}:  connected to {_settings.ConnectionString} ({_settings.GetQueueOrExchangeName()})");
@@ -169,7 +171,7 @@ namespace Lykke.RabbitMqBroker.Subscriber
                     var delivered = consumer.Queue.Dequeue(2000, out var eventArgs);
 
                     _reconnectionsInARowCount = 0;
-                    
+
                     if (delivered)
                     {
                         MessageReceived(eventArgs, channel);
@@ -277,7 +279,7 @@ namespace Lykke.RabbitMqBroker.Subscriber
 
         public void Dispose()
         {
-            ((IStopable) this).Stop();
+            ((IStopable)this).Stop();
         }
     }
 }
