@@ -32,8 +32,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Lykke.Common" Version="3.0.2" PrivateAssets="All" />
-    <PackageReference Include="RabbitMQ.Client" Version="4.1.1" PrivateAssets="All" />
+    <PackageReference Include="Lykke.Common" Version="3.0.2" />
+    <PackageReference Include="RabbitMQ.Client" Version="4.1.1" />
     <PackageReference Include="SourceLink.Create.CommandLine" Version="2.5.0" PrivateAssets="All" />
   </ItemGroup>
 
