@@ -63,10 +63,7 @@ namespace Lykke.RabbitMqBroker.Publisher
         /// </returns>
         public RabbitMqPublisher<TMessageModel> SetQueueRepository(IPublishingQueueRepository queueRepository)
         {
-            if (_rawPublisher != null)
-            {
-                throw new InvalidOperationException("Publisher already started");
-            }
+            ThrowIfStarted();
 
             _queueRepository = queueRepository;
 
@@ -81,10 +78,7 @@ namespace Lykke.RabbitMqBroker.Publisher
         /// </remarks>
         public RabbitMqPublisher<TMessageModel> DisableInMemoryQueuePersistence()
         {
-            if (_rawPublisher != null)
-            {
-                throw new InvalidOperationException("Publisher already started");
-            }
+            ThrowIfStarted();
 
             _disableQueuePersistence = true;
 
@@ -99,10 +93,8 @@ namespace Lykke.RabbitMqBroker.Publisher
         /// <param name="monitorPeriod">Queue size check period. Default is 10 seconds</param>
         public RabbitMqPublisher<TMessageModel> MonitorInMemoryQueue(int queueSizeThreshold = 1000, TimeSpan? monitorPeriod = null)
         {
-            if (_rawPublisher != null)
-            {
-                throw new InvalidOperationException("Publisher already started");
-            }
+            ThrowIfStarted();
+
             if (queueSizeThreshold < 1)
             {
                 throw new ArgumentException("Should be positive number", nameof(queueSizeThreshold));
@@ -132,10 +124,8 @@ namespace Lykke.RabbitMqBroker.Publisher
         /// <returns></returns>
         public RabbitMqPublisher<TMessageModel> EnableDeferredMessages(IDeferredMessagesRepository repository, TimeSpan? deliveryPrecision = null)
         {
-            if (_rawPublisher != null)
-            {
-                throw new InvalidOperationException("Publisher already started");
-            }
+            ThrowIfStarted();
+
             if (_log == null)
             {
                 throw new InvalidOperationException($"Log should be set before {nameof(EnableDeferredMessages)} call");
@@ -150,10 +140,7 @@ namespace Lykke.RabbitMqBroker.Publisher
 
         public RabbitMqPublisher<TMessageModel> SetSerializer(IRabbitMqSerializer<TMessageModel> serializer)
         {
-            if (_rawPublisher != null)
-            {
-                throw new InvalidOperationException("Publisher already started");
-            }
+            ThrowIfStarted();
 
             _serializer = serializer;
             return this;
@@ -164,10 +151,7 @@ namespace Lykke.RabbitMqBroker.Publisher
         /// </summary>
         public RabbitMqPublisher<TMessageModel> PublishSynchronously()
         {
-            if (_rawPublisher != null)
-            {
-                throw new InvalidOperationException("Publisher already started");
-            }
+            ThrowIfStarted();
 
             DisableInMemoryQueuePersistence();
             _publishSynchronously = true;
@@ -176,10 +160,7 @@ namespace Lykke.RabbitMqBroker.Publisher
 
         public RabbitMqPublisher<TMessageModel> SetPublishStrategy(IRabbitMqPublishStrategy publishStrategy)
         {
-            if (_rawPublisher != null)
-            {
-                throw new InvalidOperationException("Publisher already started");
-            }
+            ThrowIfStarted();
 
             _publishStrategy = publishStrategy;
             return this;
@@ -187,10 +168,7 @@ namespace Lykke.RabbitMqBroker.Publisher
 
         public RabbitMqPublisher<TMessageModel> SetLogger(ILog log)
         {
-            if (_rawPublisher != null)
-            {
-                throw new InvalidOperationException("Publisher already started");
-            }
+            ThrowIfStarted();
 
             _log = log;
             return this;
@@ -198,10 +176,7 @@ namespace Lykke.RabbitMqBroker.Publisher
 
         public RabbitMqPublisher<TMessageModel> SetConsole(IConsole console)
         {
-            if (_rawPublisher != null)
-            {
-                throw new InvalidOperationException("Publisher already started");
-            }
+            ThrowIfStarted();
 
             _console = console;
             return this;
@@ -240,10 +215,8 @@ namespace Lykke.RabbitMqBroker.Publisher
         /// <returns></returns>
         public Task ProduceAsync(TMessageModel message, DateTime deliverAt)
         {
-            if (_rawPublisher == null)
-            {
-                throw new InvalidOperationException("Publisher isn't started");
-            }
+            ThrowIfNotStarted();
+
             if (message == null)
             {
                 throw new ArgumentNullException(nameof(message));
@@ -267,10 +240,8 @@ namespace Lykke.RabbitMqBroker.Publisher
         /// <exception cref="RabbitMqBrokerException">Some error occurred while publishing</exception>
         public Task ProduceAsync(TMessageModel message)
         {
-            if (_rawPublisher == null)
-            {
-                throw new InvalidOperationException("Publisher isn't started");
-            }
+            ThrowIfNotStarted();
+
             if (message == null)
             {
                 throw new ArgumentNullException(nameof(message));
@@ -404,10 +375,7 @@ namespace Lykke.RabbitMqBroker.Publisher
                 return new InMemoryBuffer();
             }
 
-            if (_rawPublisher != null)
-            {
-                throw new InvalidOperationException($"Publisher {Name} is already started, can't load persisted messages");
-            }
+            ThrowIfStarted();
 
             var buffer = new InMemoryBuffer();
 
@@ -440,5 +408,27 @@ namespace Lykke.RabbitMqBroker.Publisher
         }
 
         #endregion
+
+
+        #region Private stuff
+
+        private void ThrowIfStarted()
+        {
+            if (_rawPublisher != null)
+            {
+                throw new InvalidOperationException($"Publisher {Name} is already started");
+            }
+        }
+
+        private void ThrowIfNotStarted()
+        {
+            if (_rawPublisher == null)
+            {
+                throw new InvalidOperationException($"Publisher {Name} isn't started yet");
+            }
+        }
+
+        #endregion
+
     }
 }

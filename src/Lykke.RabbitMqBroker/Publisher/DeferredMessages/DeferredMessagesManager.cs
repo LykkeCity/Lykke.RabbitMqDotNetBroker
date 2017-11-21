@@ -28,13 +28,18 @@ namespace Lykke.RabbitMqBroker.Publisher.DeferredMessages
             return _repository.SaveAsync(message, deliverAt);
         }
 
-        public override async Task Execute()
+        public override void Start()
         {
             if (_publisher == null)
             {
                 throw new InvalidOperationException("Publisher is not set");
             }
 
+            base.Start();
+        }
+
+        public override async Task Execute()
+        {
             var messages = await _repository.GetOverdueMessagesAsync(DateTime.UtcNow);
             var removeTasks = new List<Task>();
 
