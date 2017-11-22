@@ -7,26 +7,38 @@ namespace Lykke.RabbitMqBroker.Publisher
 {
     internal sealed class RabbitMqPublisherQueueMonitor<T> : TimerPeriod
     {
-        private readonly string _publisherName;
-        private readonly IPublisherBuffer _queuePublisher;
         private readonly int _queueSizeThreshold;
         private readonly ILog _log;
+        private IRawMessagePublisher _publisher;
 
-        public RabbitMqPublisherQueueMonitor(string publisherName, IPublisherBuffer queuePublisher, int queueSizeThreshold, TimeSpan checkPeriod, ILog log) :
+        public RabbitMqPublisherQueueMonitor(int queueSizeThreshold, TimeSpan checkPeriod, ILog log) :
             base(nameof(RabbitMqPublisherQueueMonitor<T>), (int)checkPeriod.TotalMilliseconds, log)
         {
-            _publisherName = publisherName;
-            _queuePublisher = queuePublisher;
             _queueSizeThreshold = queueSizeThreshold;
             _log = log;
         }
 
+        public void WatchThis(IRawMessagePublisher publisher)
+        {
+            _publisher = publisher ?? throw new ArgumentNullException(nameof(publisher));
+        }
+
+        public override void Start()
+        {
+            if (_publisher == null)
+            {
+                throw new InvalidOperationException("Publisher is not set");
+            }
+
+            base.Start();
+        }
+
         public override async Task Execute()
         {
-            var queueSize = _queuePublisher.Count;
+            var queueSize = _publisher.BufferedMessagesCount;
             if (queueSize > _queueSizeThreshold)
             {
-                await _log.WriteWarningAsync(nameof(RabbitMqPublisherQueueMonitor<T>), nameof(Execute), queueSize.ToString(), $"{_publisherName} buffer size: {_queuePublisher.Count}. It exceeds threshold: {_queueSizeThreshold}");
+                await _log.WriteWarningAsync(nameof(RabbitMqPublisherQueueMonitor<T>), nameof(Execute), queueSize.ToString(), $"{_publisher.Name} buffer size: {queueSize}. It exceeds threshold: {_queueSizeThreshold}");
             }
         }
     }
