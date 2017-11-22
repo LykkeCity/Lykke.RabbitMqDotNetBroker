@@ -1,3 +1,3 @@
 ﻿using System.Runtime.CompilerServices;
 
-[assembly: InternalsVisibleTo("RabbitMqBrokerTests")]
+[assembly: InternalsVisibleTo("Lykke.RabbitMqBroker.Tests")]

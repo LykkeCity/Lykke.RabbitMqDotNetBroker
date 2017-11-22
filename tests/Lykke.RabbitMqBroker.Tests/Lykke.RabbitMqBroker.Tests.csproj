@@ -17,7 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\src\Lykke.RabbitMqBroker\Lykke.RabbitMqBroker.csproj" />
+    <ProjectReference Include="..\..\src\Lykke.RabbitMqBroker\Lykke.RabbitMqBroker.csproj" />
   </ItemGroup>
 
   <ItemGroup>
