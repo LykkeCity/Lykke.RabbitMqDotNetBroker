@@ -11,12 +11,14 @@ using RabbitMQ.Client;
 namespace RabbitMqBrokerTests
 {
     [TestFixture(Category = "Integration")]
+    [Explicit]
     internal sealed class RabbitMqSubsriberTest : RabbitMqPublisherSubscriberBaseTest
     {
 
         private RabbitMqSubscriber<string> _subscriber;
 
         [SetUp]
+
         public void SetUp()
         {
             _subscriber = new RabbitMqSubscriber<string>(_settings, new DefaultErrorHandlingStrategy(Log, _settings))
@@ -78,18 +80,13 @@ namespace RabbitMqBrokerTests
 
             Assert.That(result, Is.EqualTo(expected));
         }
-
-
-
-
-
+        
         [TearDown]
         public void TearDown()
         {
             ((IStopable)_subscriber).Stop();
         }
-
-
+        
         private void PublishToQueue(string message)
         {
             var factory = new ConnectionFactory { Uri = RabbitConnectionString };
