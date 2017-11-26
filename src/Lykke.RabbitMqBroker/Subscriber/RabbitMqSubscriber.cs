@@ -148,7 +148,7 @@ namespace Lykke.RabbitMqBroker.Subscriber
             var factory = new ConnectionFactory { Uri = _settings.ConnectionString };
             _console?.WriteLine($"{_settings.GetSubscriberName()}: trying to connect to {_settings.ConnectionString} ({_settings.GetQueueOrExchangeName()})");
 
-            var cn = $"{PlatformServices.Default.Application.ApplicationName} {PlatformServices.Default.Application.ApplicationVersion}";
+            var cn = $"[Sub] {PlatformServices.Default.Application.ApplicationName} {PlatformServices.Default.Application.ApplicationVersion}";
             using (var connection = factory.CreateConnection(cn))
             using (var channel = connection.CreateModel())
             {
