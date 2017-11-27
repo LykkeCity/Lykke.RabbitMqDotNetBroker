@@ -165,7 +165,7 @@ namespace Lykke.RabbitMqBroker.Subscriber
                 {
                     if (!connection.IsOpen)
                     {
-                        throw new RabbitMqBrokerException($"{_settings.GetSubscriberName()}: connection to {_settings.ConnectionString} is closed");
+                        throw new RabbitMqBrokerException($"{_settings.GetSubscriberName()}: connection to {connection.Endpoint.ToString()} is closed");
                     }
 
                     var delivered = consumer.Queue.Dequeue(2000, out var eventArgs);

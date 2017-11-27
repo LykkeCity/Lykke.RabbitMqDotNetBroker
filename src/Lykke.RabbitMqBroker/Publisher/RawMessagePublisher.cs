@@ -150,7 +150,7 @@ namespace Lykke.RabbitMqBroker.Publisher
 
                     if (!connection.IsOpen)
                     {
-                        throw new RabbitMqBrokerException($"{Name}: connection to {_settings.ConnectionString} is closed");
+                        throw new RabbitMqBrokerException($"{Name}: connection to {connection.Endpoint.ToString()} is closed");
                     }
 
                     _publishStrategy.Publish(_settings, channel, message);
