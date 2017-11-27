@@ -44,6 +44,8 @@ namespace Lykke.RabbitMqBroker.Publisher
 
         private IPublisherBuffer _bufferOverriding;
 
+        public int BufferedMessagesCount => _rawPublisher == null ? 0 : _rawPublisher.BufferedMessagesCount;
+
         public RabbitMqPublisher(RabbitMqSubscriptionSettings settings)
         {
             _settings = settings;
