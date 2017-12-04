@@ -1,15 +1,17 @@
 ﻿using System.Text;
+using JetBrains.Annotations;
 using Newtonsoft.Json;
 
 namespace Lykke.RabbitMqBroker.Publisher
 {
+    [PublicAPI]
     public class JsonMessageSerializer<TMessage> : IRabbitMqSerializer<TMessage>
     {
         private readonly Encoding _encoding;
         private readonly JsonSerializerSettings _settings;
 
         public JsonMessageSerializer() :
-            this(Encoding.UTF8, null)
+            this(null, null)
         {
         }
 
@@ -25,17 +27,16 @@ namespace Lykke.RabbitMqBroker.Publisher
 
         public JsonMessageSerializer(Encoding encoding, JsonSerializerSettings settings)
         {
-            _encoding = encoding;
-            _settings = settings;
+            _encoding = encoding ?? Encoding.UTF8;
+            _settings = settings ?? new JsonSerializerSettings
+            {
+                DateTimeZoneHandling = DateTimeZoneHandling.Utc
+            };
         }
 
         public byte[] Serialize(TMessage model)
         {
-            var settings = _settings ?? new JsonSerializerSettings
-            {
-                DateTimeZoneHandling = DateTimeZoneHandling.Utc
-            };
-            var serialized = JsonConvert.SerializeObject(model, settings);
+            var serialized = JsonConvert.SerializeObject(model, _settings);
 
             return _encoding.GetBytes(serialized);
         }
