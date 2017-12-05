@@ -4,6 +4,9 @@ using MessagePack;
 
 namespace Lykke.RabbitMqBroker.Publisher
 {
+    /// <summary>
+    /// Uses MessagePack to serialize the message
+    /// </summary>
     [PublicAPI]
     public class MessagePackMessageSerializer<TMessage> : IRabbitMqSerializer<TMessage>
     {
