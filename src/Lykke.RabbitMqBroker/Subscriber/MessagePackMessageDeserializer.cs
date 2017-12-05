@@ -26,8 +26,6 @@ namespace Lykke.RabbitMqBroker.Subscriber
         {
             using (var stream = new MemoryStream(data))
             {
-                stream.Position = 0;
-
                 return MessagePackSerializer.Deserialize<TMessage>(stream, _formatterResolver, _readStrict);
             }
         }
