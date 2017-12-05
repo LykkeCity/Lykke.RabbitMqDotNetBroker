@@ -1,15 +1,18 @@
-﻿using System.Text;
+﻿using System.IO;
+using System.Text;
+using JetBrains.Annotations;
 using Newtonsoft.Json;
 
 namespace Lykke.RabbitMqBroker.Subscriber
 {
+    [PublicAPI]
     public class JsonMessageDeserializer<TMessage> : IMessageDeserializer<TMessage>
     {
         private readonly Encoding _encoding;
-        private readonly JsonSerializerSettings _settings;
+        private JsonSerializer _serializer;
 
         public JsonMessageDeserializer() :
-            this(Encoding.UTF8, null)
+            this(null, null)
         {
         }
 
@@ -19,25 +22,27 @@ namespace Lykke.RabbitMqBroker.Subscriber
         }
 
         public JsonMessageDeserializer(JsonSerializerSettings settings) :
-            this(Encoding.UTF8, settings)
+            this(null, settings)
         {
         }
 
         public JsonMessageDeserializer(Encoding encoding, JsonSerializerSettings settings)
         {
-            _encoding = encoding;
-            _settings = settings;
+            _encoding = encoding ?? Encoding.UTF8;
+            _serializer = JsonSerializer.Create(settings ?? new JsonSerializerSettings
+            {
+                DateTimeZoneHandling = DateTimeZoneHandling.Utc
+            });
         }
 
         public TMessage Deserialize(byte[] data)
         {
-            var settings = _settings ?? new JsonSerializerSettings
+            using (var stream = new MemoryStream(data))
+            using (var reader = new StreamReader(stream, _encoding))
+            using (var jsonReader = new JsonTextReader(reader))
             {
-                DateTimeZoneHandling = DateTimeZoneHandling.Utc
-            };
-            var json = _encoding.GetString(data);
-
-            return JsonConvert.DeserializeObject<TMessage>(json, settings);
+                return JsonSerializer.Create().Deserialize<TMessage>(jsonReader);
+            }
         }
     }
 }
