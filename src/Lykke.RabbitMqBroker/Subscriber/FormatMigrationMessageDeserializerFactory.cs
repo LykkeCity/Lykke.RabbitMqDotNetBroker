@@ -20,8 +20,8 @@ namespace Lykke.RabbitMqBroker.Subscriber
             IFormatterResolver messagePackFormatterResolver = null)
         {
             return new FormatMigrationMessageDeserializer<TMessage>(
-                new JsonMessageDeserializer<TMessage>(),
-                new MessagePackMessageDeserializer<TMessage>());
+                new JsonMessageDeserializer<TMessage>(jsonEncoding, jsonSettings),
+                new MessagePackMessageDeserializer<TMessage>(messagePackFormatterResolver));
         }
     }
 }
