@@ -41,7 +41,7 @@ namespace Lykke.RabbitMqBroker.Subscriber
             using (var reader = new StreamReader(stream, _encoding))
             using (var jsonReader = new JsonTextReader(reader))
             {
-                return JsonSerializer.Create().Deserialize<TMessage>(jsonReader);
+                return _serializer.Deserialize<TMessage>(jsonReader);
             }
         }
     }
