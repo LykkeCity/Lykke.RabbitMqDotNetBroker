@@ -129,7 +129,7 @@ namespace Lykke.RabbitMqBroker.Publisher
 
             _console?.WriteLine($"{Name}: trying to connect to {_settings.ConnectionString} ({_settings.GetQueueOrExchangeName()})");
 
-            var cn = $"[Pub] {PlatformServices.Default.Application.ApplicationName} {PlatformServices.Default.Application.ApplicationVersion}";
+            var cn = $"[Pub] {PlatformServices.Default.Application.ApplicationName} {PlatformServices.Default.Application.ApplicationVersion} to {_settings.ExchangeName ?? ""}";
             using (var connection = factory.CreateConnection(cn))
             using (var channel = connection.CreateModel())
             {
