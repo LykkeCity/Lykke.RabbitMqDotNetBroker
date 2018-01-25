@@ -13,17 +13,8 @@ namespace Lykke.RabbitMqBroker
 
         public DefaultErrorHandlingStrategy(ILog log, RabbitMqSubscriptionSettings settings, IErrorHandlingStrategy next = null)
         {
-            if (log == null)
-            {
-                throw new ArgumentNullException(nameof(log));
-            }
-            if (settings == null)
-            {
-                throw new ArgumentNullException(nameof(settings));
-            }
-
-            _log = log;
-            _settings = settings;
+            _log = log ?? throw new ArgumentNullException(nameof(log));
+            _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             _next = next;
         }
         public void Execute(Action handler, IMessageAcceptor ma, CancellationToken cancellationToken)
@@ -36,7 +27,7 @@ namespace Lykke.RabbitMqBroker
             catch (Exception ex)
             {
                 // ReSharper disable once MethodSupportsCancellation
-                _log.WriteErrorAsync(_settings.GetSubscriberName(), "Message handling", "", ex).Wait();
+                _log.WriteErrorAsync(_settings.GetSubscriberName(), "Message handling", _settings.GetSubscriberName(), ex).Wait();
                 if (_next == null)
                 {
                     ma.Accept();
