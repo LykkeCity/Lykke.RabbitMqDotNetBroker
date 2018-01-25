@@ -123,7 +123,7 @@ namespace Lykke.RabbitMqBroker.Subscriber
 
                         if (_reconnectionsInARowCount > _settings.ReconnectionsCountToAlarm)
                         {
-                            _log.WriteFatalErrorAsync(_settings.GetSubscriberName(), nameof(ReadThread), "", ex).Wait();
+                            await _log.WriteFatalErrorAsync(_settings.GetSubscriberName(), nameof(ReadThread), new Uri(_settings.ConnectionString).Authority, ex);
 
                             _reconnectionsInARowCount = 0;
                         }
