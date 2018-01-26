@@ -398,7 +398,7 @@ namespace Lykke.RabbitMqBroker.Publisher
                 return;
             }
             
-            _queueRepository.SaveAsync(bufferedMessages, _settings.ExchangeName).Wait();
+            _queueRepository.SaveAsync(bufferedMessages, _settings.ExchangeName).GetAwaiter().GetResult();
         }
 
         #endregion

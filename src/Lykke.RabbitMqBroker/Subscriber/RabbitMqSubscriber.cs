@@ -245,7 +245,7 @@ namespace Lykke.RabbitMqBroker.Subscriber
             catch (Exception ex)
             {
                 _console?.WriteLine("Failed to process the message");
-                _log.WriteErrorAsync(GetType().Name, nameof(MessageReceived), "Failed to process the message", ex).Wait();
+                _log.WriteErrorAsync(GetType().Name, nameof(MessageReceived), "Failed to process the message", ex).GetAwaiter().GetResult();
             }
         }
 
@@ -253,8 +253,8 @@ namespace Lykke.RabbitMqBroker.Subscriber
         {
             _errorHandlingStrategy.Execute(
                 _cancallableEventHandler != null
-                ? () => _cancallableEventHandler(model, _cancellationTokenSource.Token).Wait()
-                : (Action)(() => _eventHandler(model).Wait()),
+                ? () => _cancallableEventHandler(model, _cancellationTokenSource.Token).GetAwaiter().GetResult()
+                : (Action)(() => _eventHandler(model).GetAwaiter().GetResult()),
                 ma,
                 _cancellationTokenSource.Token);
         }

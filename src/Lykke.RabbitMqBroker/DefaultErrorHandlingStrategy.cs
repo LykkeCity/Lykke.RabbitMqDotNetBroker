@@ -27,7 +27,7 @@ namespace Lykke.RabbitMqBroker
             catch (Exception ex)
             {
                 // ReSharper disable once MethodSupportsCancellation
-                _log.WriteErrorAsync(_settings.GetSubscriberName(), "Message handling", _settings.GetSubscriberName(), ex).Wait();
+                _log.WriteErrorAsync(_settings.GetSubscriberName(), "Message handling", _settings.GetSubscriberName(), ex).GetAwaiter().GetResult();
                 if (_next == null)
                 {
                     ma.Accept();
