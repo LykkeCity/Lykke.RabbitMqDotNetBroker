@@ -30,7 +30,7 @@ namespace Lykke.RabbitMqBroker
                         _settings.GetSubscriberName(),
                         "Message handling",
                         $"Failed to handle the message. Send it to poison queue {_settings.QueueName}-poison. Exception {ex}")
-                    .Wait();
+                    .GetAwaiter().GetResult();
                 ma.Reject();
             }
         }

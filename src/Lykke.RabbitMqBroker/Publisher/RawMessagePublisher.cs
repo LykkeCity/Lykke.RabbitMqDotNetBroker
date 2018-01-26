@@ -3,9 +3,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.PlatformAbstractions;
+using Microsoft.ApplicationInsights;
+using Microsoft.ApplicationInsights.DataContracts;
+using Microsoft.ApplicationInsights.Extensibility;
 using Common.Log;
 using Lykke.RabbitMqBroker.Subscriber;
-using Microsoft.Extensions.PlatformAbstractions;
+
 using RabbitMQ.Client;
 
 namespace Lykke.RabbitMqBroker.Publisher
@@ -15,17 +19,21 @@ namespace Lykke.RabbitMqBroker.Publisher
         public string Name { get; }
         public int BufferedMessagesCount => _buffer.Count;
 
+        private const string _telemetryType = "RabbitMq Publisher";
+
         private readonly ILog _log;
         private readonly IConsole _console;
         private readonly IPublisherBuffer _buffer;
         private readonly IRabbitMqPublishStrategy _publishStrategy;
         private readonly RabbitMqSubscriptionSettings _settings;
         private readonly bool _publishSynchronously;
-
+        private readonly bool _submitTelemetry;
         private readonly AutoResetEvent _publishLock;
         private readonly Thread _thread;
         private readonly CancellationTokenSource _cancellationTokenSource;
-        
+        private readonly TelemetryClient _telemetry = new TelemetryClient();
+        private readonly string _exchangeQueueName;
+
         private Exception _lastPublishException;
         private int _reconnectionsInARowCount;
 
@@ -36,7 +44,8 @@ namespace Lykke.RabbitMqBroker.Publisher
             IPublisherBuffer buffer,
             IRabbitMqPublishStrategy publishStrategy,
             RabbitMqSubscriptionSettings settings,
-            bool publishSynchronously)
+            bool publishSynchronously,
+            bool submitTelemetry)
         {
             Name = name;
             _log = log;
@@ -45,6 +54,8 @@ namespace Lykke.RabbitMqBroker.Publisher
             _settings = settings;
             _publishSynchronously = publishSynchronously;
             _publishStrategy = publishStrategy;
+            _submitTelemetry = submitTelemetry;
+            _exchangeQueueName = _settings.GetQueueOrExchangeName();
 
             _publishLock = new AutoResetEvent(false);
             _cancellationTokenSource = new CancellationTokenSource();
@@ -127,13 +138,13 @@ namespace Lykke.RabbitMqBroker.Publisher
         {
             var factory = new ConnectionFactory { Uri = _settings.ConnectionString };
 
-            _console?.WriteLine($"{Name}: trying to connect to {_settings.ConnectionString} ({_settings.GetQueueOrExchangeName()})");
+            _console?.WriteLine($"{Name}: trying to connect to {_settings.ConnectionString} ({_exchangeQueueName})");
 
             var cn = $"[Pub] {PlatformServices.Default.Application.ApplicationName} {PlatformServices.Default.Application.ApplicationVersion} to {_settings.ExchangeName ?? ""}";
             using (var connection = factory.CreateConnection(cn))
             using (var channel = connection.CreateModel())
             {
-                _console?.WriteLine($"{Name}: connected to {_settings.ConnectionString} ({_settings.GetQueueOrExchangeName()})");
+                _console?.WriteLine($"{Name}: connected to {_settings.ConnectionString} ({_exchangeQueueName})");
                 _publishStrategy.Configure(_settings, channel);
 
                 while (!IsStopped())
@@ -153,7 +164,29 @@ namespace Lykke.RabbitMqBroker.Publisher
                         throw new RabbitMqBrokerException($"{Name}: connection to {connection.Endpoint.ToString()} is closed");
                     }
 
-                    _publishStrategy.Publish(_settings, channel, message);
+                    if (_submitTelemetry)
+                    {
+                        var telemetryOperation = InitTelemetryOperation(message.Length);
+                        try
+                        {
+                            _publishStrategy.Publish(_settings, channel, message);
+                        }
+                        catch (Exception e)
+                        {
+                            telemetryOperation.Telemetry.Success = false;
+                            _telemetry.TrackException(e);
+                            throw;
+                        }
+                        finally
+                        {
+                            _telemetry.StopOperation(telemetryOperation);
+                        }
+                    }
+                    else
+                    {
+                        _publishStrategy.Publish(_settings, channel, message);
+                    }
+
                     if (_publishSynchronously)
                         _publishLock.Set();
 
@@ -200,6 +233,17 @@ namespace Lykke.RabbitMqBroker.Publisher
             }
 
             _console?.WriteLine($"{Name}: is stopped");
+        }
+
+        private IOperationHolder<DependencyTelemetry> InitTelemetryOperation(int binaryLength)
+        {
+            var operation = _telemetry.StartOperation<DependencyTelemetry>(_exchangeQueueName);
+            operation.Telemetry.Type = _telemetryType;
+            operation.Telemetry.Target = _exchangeQueueName;
+            operation.Telemetry.Name = Name;
+            operation.Telemetry.Data = $"Binary length {binaryLength}";
+
+            return operation;
         }
     }
 }

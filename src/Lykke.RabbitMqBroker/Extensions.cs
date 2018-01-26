@@ -16,7 +16,7 @@ namespace Lykke.RabbitMqBroker
 
         internal static string GetQueueOrExchangeName(this RabbitMqSubscriptionSettings settings)
         {
-            return $"{(!string.IsNullOrEmpty(settings.ExchangeName) ? $"Exchange: {settings.ExchangeName}, " : string.Empty)}Queue: {settings.QueueName}";
+            return $"Exchange: {settings.ExchangeName}{(!string.IsNullOrEmpty(settings.QueueName) ? $" Queue: {settings.QueueName}" : string.Empty)}";
         }
     }
 }

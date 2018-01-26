@@ -49,7 +49,7 @@ namespace Lykke.RabbitMqBroker
                         _settings.GetSubscriberName(),
                         "Message handling",
                         $"Failed to handle the message for the first time. Retry in {_retryTimeout.Seconds} sec. Exception {ex}")
-                    .Wait();
+                    .GetAwaiter().GetResult();
 
                 // Retries loop
 
@@ -58,7 +58,7 @@ namespace Lykke.RabbitMqBroker
                     // Adding delay between attempts
 
                     // ReSharper disable once MethodSupportsCancellation
-                    Task.Delay(_retryTimeout, cancellationToken).Wait();
+                    Task.Delay(_retryTimeout, cancellationToken).GetAwaiter().GetResult();
 
                     try
                     {
@@ -76,7 +76,7 @@ namespace Lykke.RabbitMqBroker
                                 _settings.GetSubscriberName(),
                                 "Message handling",
                                 $"Failed to handle the message for the {i + 1} time. Retry in {_retryTimeout.Seconds} sec. Exception {ex2}")
-                            .Wait();
+                            .GetAwaiter().GetResult();
                     }
                 }
 
