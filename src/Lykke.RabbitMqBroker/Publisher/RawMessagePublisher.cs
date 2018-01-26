@@ -27,7 +27,7 @@ namespace Lykke.RabbitMqBroker.Publisher
         private readonly IRabbitMqPublishStrategy _publishStrategy;
         private readonly RabbitMqSubscriptionSettings _settings;
         private readonly bool _publishSynchronously;
-
+        private readonly bool _submitTelemetry;
         private readonly AutoResetEvent _publishLock;
         private readonly Thread _thread;
         private readonly CancellationTokenSource _cancellationTokenSource;
@@ -44,7 +44,8 @@ namespace Lykke.RabbitMqBroker.Publisher
             IPublisherBuffer buffer,
             IRabbitMqPublishStrategy publishStrategy,
             RabbitMqSubscriptionSettings settings,
-            bool publishSynchronously)
+            bool publishSynchronously,
+            bool submitTelemetry)
         {
             Name = name;
             _log = log;
@@ -53,7 +54,7 @@ namespace Lykke.RabbitMqBroker.Publisher
             _settings = settings;
             _publishSynchronously = publishSynchronously;
             _publishStrategy = publishStrategy;
-
+            _submitTelemetry = submitTelemetry;
             _exchangeQueueName = _settings.GetQueueOrExchangeName();
 
             _publishLock = new AutoResetEvent(false);
@@ -163,20 +164,27 @@ namespace Lykke.RabbitMqBroker.Publisher
                         throw new RabbitMqBrokerException($"{Name}: connection to {connection.Endpoint.ToString()} is closed");
                     }
 
-                    var telemetryOperation = InitTelemetryOperation(message.Length);
-                    try
+                    if (_submitTelemetry)
+                    {
+                        var telemetryOperation = InitTelemetryOperation(message.Length);
+                        try
+                        {
+                            _publishStrategy.Publish(_settings, channel, message);
+                        }
+                        catch (Exception e)
+                        {
+                            telemetryOperation.Telemetry.Success = false;
+                            _telemetry.TrackException(e);
+                            throw;
+                        }
+                        finally
+                        {
+                            _telemetry.StopOperation(telemetryOperation);
+                        }
+                    }
+                    else
                     {
                         _publishStrategy.Publish(_settings, channel, message);
-                    }
-                    catch (Exception e)
-                    {
-                        telemetryOperation.Telemetry.Success = false;
-                        _telemetry.TrackException(e);
-                        throw;
-                    }
-                    finally
-                    {
-                        _telemetry.StopOperation(telemetryOperation);
                     }
 
                     if (_publishSynchronously)

@@ -25,7 +25,7 @@ namespace Lykke.RabbitMqBroker.Publisher
         private readonly RabbitMqSubscriptionSettings _settings;
 
         // Configuration
-
+        private readonly bool _submitTelemetry;
         private IPublishingQueueRepository _queueRepository;
         private bool _disableQueuePersistence;
         private IRabbitMqSerializer<TMessageModel> _serializer;
@@ -46,9 +46,10 @@ namespace Lykke.RabbitMqBroker.Publisher
 
         public int BufferedMessagesCount => _rawPublisher == null ? 0 : _rawPublisher.BufferedMessagesCount;
 
-        public RabbitMqPublisher(RabbitMqSubscriptionSettings settings)
+        public RabbitMqPublisher(RabbitMqSubscriptionSettings settings, bool submitTelemetry = true)
         {
             _settings = settings;
+            _submitTelemetry = submitTelemetry;
         }
 
         #region Configurator
@@ -303,8 +304,9 @@ namespace Lykke.RabbitMqBroker.Publisher
                 messagesBuffer,
                 _publishStrategy,
                 _settings,
-                _publishSynchronously);
-            
+                _publishSynchronously,
+                _submitTelemetry);
+
             _queueMonitor.WatchThis(_rawPublisher);
             _queueMonitor.Start();
 

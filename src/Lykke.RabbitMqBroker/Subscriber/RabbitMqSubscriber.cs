@@ -30,6 +30,7 @@ namespace Lykke.RabbitMqBroker.Subscriber
         private Func<TTopicModel, CancellationToken, Task> _cancallableEventHandler;
         private readonly RabbitMqSubscriptionSettings _settings;
         private readonly IErrorHandlingStrategy _errorHandlingStrategy;
+        private readonly bool _submitTelemetry;
         private readonly TelemetryClient _telemetry = new TelemetryClient();
         private readonly string _exchangeQueueName;
         private readonly string _typeName = typeof(TTopicModel).Name;
@@ -41,19 +42,28 @@ namespace Lykke.RabbitMqBroker.Subscriber
         private int _reconnectionsInARowCount;
         private CancellationTokenSource _cancellationTokenSource;
 
-        public RabbitMqSubscriber(RabbitMqSubscriptionSettings settings, IErrorHandlingStrategy errorHandlingStrategy)
+        public RabbitMqSubscriber(
+            RabbitMqSubscriptionSettings settings,
+            IErrorHandlingStrategy errorHandlingStrategy,
+            bool submitTelemetry = true)
         {
             _settings = settings;
             _errorHandlingStrategy = errorHandlingStrategy;
+            _submitTelemetry = submitTelemetry;
             _exchangeQueueName = _settings.GetQueueOrExchangeName();
         }
 
         [Obsolete("Use RabbitMqSubscriber(RabbitMqSubscriptionSettings settings, IErrorHandlingStrategy errorHandlingStrategy) and settings.ReconnectionDelay to specify reconnection delay")]
-        public RabbitMqSubscriber(RabbitMqSubscriptionSettings settings, IErrorHandlingStrategy errorHandlingStrategy, int reconnectTimeOut = 3000)
+        public RabbitMqSubscriber(
+            RabbitMqSubscriptionSettings settings,
+            IErrorHandlingStrategy errorHandlingStrategy,
+            int reconnectTimeOut = 3000,
+            bool submitTelemetry = true)
         {
             _settings = settings;
             _errorHandlingStrategy = errorHandlingStrategy;
             _settings.ReconnectionDelay = TimeSpan.FromMilliseconds(reconnectTimeOut);
+            _submitTelemetry = submitTelemetry;
             _exchangeQueueName = _settings.GetQueueOrExchangeName();
         }
 
@@ -202,32 +212,34 @@ namespace Lykke.RabbitMqBroker.Subscriber
 
                 var ma = new MessageAcceptor(channel, tag);
 
-                var telemetryOperation = InitTelemetryOperation(body.Length);
-                try
+                if (_submitTelemetry)
                 {
-                    if (_cancallableEventHandler != null)
+                    var telemetryOperation = InitTelemetryOperation(body.Length);
+                    try
                     {
-                        _errorHandlingStrategy.Execute(
-                            () => _cancallableEventHandler(model, _cancellationTokenSource.Token).Wait(),
-                            ma,
-                            _cancellationTokenSource.Token);
+                        ExecuteStrategy(model, ma);
                     }
-                    else
+                    catch (Exception e)
                     {
-                        _errorHandlingStrategy.Execute(() => _eventHandler(model).Wait(), ma,
-                            _cancellationTokenSource.Token);
+                        telemetryOperation.Telemetry.Success = false;
+                        _telemetry.TrackException(e);
+                        if (!(e is OperationCanceledException))
+                            throw;
+                    }
+                    finally
+                    {
+                        _telemetry.StopOperation(telemetryOperation);
                     }
                 }
-                catch (Exception e)
+                else
                 {
-                    telemetryOperation.Telemetry.Success = false;
-                    _telemetry.TrackException(e);
-                    if (!(e is OperationCanceledException))
-                        throw;
-                }
-                finally
-                {
-                    _telemetry.StopOperation(telemetryOperation);
+                    try
+                    {
+                        ExecuteStrategy(model, ma);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                    }
                 }
             }
             catch (Exception ex)
@@ -235,6 +247,16 @@ namespace Lykke.RabbitMqBroker.Subscriber
                 _console?.WriteLine("Failed to process the message");
                 _log.WriteErrorAsync(GetType().Name, nameof(MessageReceived), "Failed to process the message", ex).Wait();
             }
+        }
+
+        private void ExecuteStrategy(TTopicModel model, MessageAcceptor ma)
+        {
+            _errorHandlingStrategy.Execute(
+                _cancallableEventHandler != null
+                ? () => _cancallableEventHandler(model, _cancellationTokenSource.Token).Wait()
+                : (Action)(() => _eventHandler(model).Wait()),
+                ma,
+                _cancellationTokenSource.Token);
         }
 
         void IStartable.Start()

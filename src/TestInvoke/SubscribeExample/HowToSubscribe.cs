@@ -14,7 +14,7 @@ namespace TestInvoke.SubscribeExample
             var looger = new LogToConsole();
 
             _connector =
-                new RabbitMqSubscriber<string>(settings, new DefaultErrorHandlingStrategy(looger, settings))
+                new RabbitMqSubscriber<string>(settings, new DefaultErrorHandlingStrategy(looger, settings), true)
                   .SetMessageDeserializer(new TestMessageDeserializer())
                   .CreateDefaultBinding()
                   .Subscribe(HandleMessage)
