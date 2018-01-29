@@ -53,20 +53,6 @@ namespace Lykke.RabbitMqBroker.Subscriber
             _exchangeQueueName = _settings.GetQueueOrExchangeName();
         }
 
-        [Obsolete("Use RabbitMqSubscriber(RabbitMqSubscriptionSettings settings, IErrorHandlingStrategy errorHandlingStrategy) and settings.ReconnectionDelay to specify reconnection delay")]
-        public RabbitMqSubscriber(
-            RabbitMqSubscriptionSettings settings,
-            IErrorHandlingStrategy errorHandlingStrategy,
-            int reconnectTimeOut = 3000,
-            bool submitTelemetry = true)
-        {
-            _settings = settings;
-            _errorHandlingStrategy = errorHandlingStrategy;
-            _settings.ReconnectionDelay = TimeSpan.FromMilliseconds(reconnectTimeOut);
-            _submitTelemetry = submitTelemetry;
-            _exchangeQueueName = _settings.GetQueueOrExchangeName();
-        }
-
         #region Configurator
 
         public RabbitMqSubscriber<TTopicModel> SetMessageDeserializer(
