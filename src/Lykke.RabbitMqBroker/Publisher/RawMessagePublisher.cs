@@ -19,7 +19,7 @@ namespace Lykke.RabbitMqBroker.Publisher
         public string Name { get; }
         public int BufferedMessagesCount => _buffer.Count;
 
-        private const string _telemetryType = "RabbitMq Publisher";
+        private const string TelemetryType = "RabbitMq Publisher";
 
         private readonly ILog _log;
         private readonly IConsole _console;
@@ -68,14 +68,14 @@ namespace Lykke.RabbitMqBroker.Publisher
             _thread.Start();
         }
 
-        public void Produce(byte[] body)
+        public void Produce(RawMessage message)
         {
             if (IsStopped())
             {
                 throw new InvalidOperationException($"{Name}: publisher is not run, can't produce the message");
             }
 
-            _buffer.Enqueue(body, _cancellationTokenSource.Token);
+            _buffer.Enqueue(message, _cancellationTokenSource.Token);
 
             if (_publishSynchronously)
             {
@@ -93,7 +93,7 @@ namespace Lykke.RabbitMqBroker.Publisher
             }
         }
 
-        public IReadOnlyList<byte[]> GetBufferedMessages()
+        public IReadOnlyList<RawMessage> GetBufferedMessages()
         {
             if (!IsStopped())
             {
@@ -149,7 +149,7 @@ namespace Lykke.RabbitMqBroker.Publisher
 
                 while (!IsStopped())
                 {
-                    byte[] message;
+                    RawMessage message;
                     try
                     {
                         message = _buffer.Dequeue(_cancellationTokenSource.Token);
@@ -161,12 +161,12 @@ namespace Lykke.RabbitMqBroker.Publisher
 
                     if (!connection.IsOpen)
                     {
-                        throw new RabbitMqBrokerException($"{Name}: connection to {connection.Endpoint.ToString()} is closed");
+                        throw new RabbitMqBrokerException($"{Name}: connection to {connection.Endpoint} is closed");
                     }
 
                     if (_submitTelemetry)
                     {
-                        var telemetryOperation = InitTelemetryOperation(message.Length);
+                        var telemetryOperation = InitTelemetryOperation(message);
                         try
                         {
                             _publishStrategy.Publish(_settings, channel, message);
@@ -235,13 +235,14 @@ namespace Lykke.RabbitMqBroker.Publisher
             _console?.WriteLine($"{Name}: is stopped");
         }
 
-        private IOperationHolder<DependencyTelemetry> InitTelemetryOperation(int binaryLength)
+        private IOperationHolder<DependencyTelemetry> InitTelemetryOperation(RawMessage message)
         {
+            var effectiveRoutingKey = message.RoutingKey ?? _settings.RoutingKey;
             var operation = _telemetry.StartOperation<DependencyTelemetry>(_exchangeQueueName);
-            operation.Telemetry.Type = _telemetryType;
-            operation.Telemetry.Target = _exchangeQueueName;
+            operation.Telemetry.Type = TelemetryType;
+            operation.Telemetry.Target = effectiveRoutingKey != null ? $"{_exchangeQueueName}:{effectiveRoutingKey}" : _exchangeQueueName;
             operation.Telemetry.Name = Name;
-            operation.Telemetry.Data = $"Binary length {binaryLength}";
+            operation.Telemetry.Data = $"Binary length {message.Body.Length}";
 
             return operation;
         }

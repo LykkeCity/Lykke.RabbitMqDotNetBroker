@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
@@ -145,13 +145,13 @@ namespace RabbitMqBrokerTests
 
         protected class TestBuffer : IPublisherBuffer
         {
-            private readonly BlockingCollection<byte[]> _collection = new BlockingCollection<byte[]>();
+            private readonly BlockingCollection<RawMessage> _collection = new BlockingCollection<RawMessage>();
 
             public readonly ManualResetEventSlim Gate = new ManualResetEventSlim(false);
 
-            public IEnumerator<byte[]> GetEnumerator()
+            public IEnumerator<RawMessage> GetEnumerator()
             {
-                return ((IEnumerable<byte[]>)_collection).GetEnumerator();
+                return ((IEnumerable<RawMessage>)_collection).GetEnumerator();
             }
 
             IEnumerator IEnumerable.GetEnumerator()
@@ -166,12 +166,12 @@ namespace RabbitMqBrokerTests
 
             public int Count => _collection.Count;
 
-            public void Enqueue(byte[] message, CancellationToken cancelationToken)
+            public void Enqueue(RawMessage message, CancellationToken cancelationToken)
             {
                 _collection.Add(message);
             }
 
-            public byte[] Dequeue(CancellationToken cancelationToken)
+            public RawMessage Dequeue(CancellationToken cancelationToken)
             {
                 Gate.Wait();
                 return _collection.Take(cancelationToken);

@@ -17,7 +17,7 @@ namespace Lykke.RabbitMqBroker.Publisher.DeferredMessages
         /// </summary>
         /// <param name="message">The message</param>
         /// <param name="deliverAt">The date, when message should be delivered</param>
-        Task SaveAsync(byte[] message, DateTime deliverAt);
+        Task SaveAsync(RawMessage message, DateTime deliverAt);
 
         /// <summary>
         /// Implementation should return messages, which have the overdue delivery date.

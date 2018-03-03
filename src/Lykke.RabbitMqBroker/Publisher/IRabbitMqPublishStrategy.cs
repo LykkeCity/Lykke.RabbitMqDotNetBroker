@@ -6,6 +6,6 @@ namespace Lykke.RabbitMqBroker.Publisher
     public interface IRabbitMqPublishStrategy
     {
         void Configure(RabbitMqSubscriptionSettings settings, IModel channel);
-        void Publish(RabbitMqSubscriptionSettings settings, IModel channel, byte[] data);
+        void Publish(RabbitMqSubscriptionSettings settings, IModel channel, RawMessage message);
     }
 }

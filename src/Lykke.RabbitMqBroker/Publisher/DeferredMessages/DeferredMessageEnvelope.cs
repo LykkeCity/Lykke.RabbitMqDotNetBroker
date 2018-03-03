@@ -16,12 +16,12 @@ namespace Lykke.RabbitMqBroker.Publisher.DeferredMessages
         /// <summary>
         /// The message
         /// </summary>
-        public byte[] Message { get; }
+        public RawMessage Message { get; }
 
         /// <summary>
         /// Deferred message envelope, used to transfer message data between repository and deferred messaging core
         /// </summary>
-        public DeferredMessageEnvelope(string key, byte[] message)
+        public DeferredMessageEnvelope(string key, RawMessage message)
         {
             Key = key ?? throw new ArgumentNullException(nameof(key));
             Message = message ?? throw new ArgumentNullException(nameof(message));
