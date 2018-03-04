@@ -72,8 +72,10 @@ namespace RabbitMqBrokerTests
                 .SetLogger(Log)
                 .Start();
 
-            var invalidObj = new ComplexType();
-            invalidObj.A = 10;
+            var invalidObj = new ComplexType
+            {
+                A = 10
+            };
             invalidObj.B = invalidObj;
 
             Assert.ThrowsAsync<JsonSerializationException>(() => publisher.ProduceAsync(invalidObj));
@@ -94,7 +96,7 @@ namespace RabbitMqBrokerTests
             _publisher.PublishSynchronously();
             _publisher.Start();
 
-            pubStrategy.When(m => m.Publish(Arg.Any<RabbitMqSubscriptionSettings>(), Arg.Any<IModel>(), Arg.Any<byte[]>())).Throw<InvalidOperationException>();
+            pubStrategy.When(m => m.Publish(Arg.Any<RabbitMqSubscriptionSettings>(), Arg.Any<IModel>(), Arg.Any<RawMessage>())).Throw<InvalidOperationException>();
 
 
             Assert.Throws<RabbitMqBrokerException>(() => _publisher.ProduceAsync(string.Empty).Wait());

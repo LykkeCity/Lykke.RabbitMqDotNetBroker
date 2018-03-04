@@ -44,7 +44,7 @@ namespace Lykke.RabbitMqBroker.Publisher
 
         private IPublisherBuffer _bufferOverriding;
 
-        public int BufferedMessagesCount => _rawPublisher == null ? 0 : _rawPublisher.BufferedMessagesCount;
+        public int BufferedMessagesCount => _rawPublisher?.BufferedMessagesCount ?? 0;
 
         public RabbitMqPublisher(RabbitMqSubscriptionSettings settings, bool submitTelemetry = true)
         {
@@ -115,8 +115,8 @@ namespace Lykke.RabbitMqBroker.Publisher
         }
 
         /// <summary>
-        /// Enables deferred messages publishing using <see cref="ProduceAsync(TMessageModel,System.TimeSpan)"/> 
-        /// or <see cref="ProduceAsync(TMessageModel,System.DateTime)"/> methods
+        /// Enables deferred messages publishing using <see cref="ProduceAsync(TMessageModel,System.TimeSpan, string)"/> 
+        /// or <see cref="ProduceAsync(TMessageModel,System.DateTime, string)"/> methods
         /// </summary>
         /// <param name="repository">Deferred message repository instance</param>
         /// <param name="deliveryPrecision">
@@ -150,7 +150,7 @@ namespace Lykke.RabbitMqBroker.Publisher
         }
         
         /// <summary>
-        /// Disables internal buffer. If exception occurred while publishing it will be re-thrown in the <see cref="ProduceAsync(TMessageModel)"/>
+        /// Disables internal buffer. If exception occurred while publishing it will be re-thrown in the <see cref="ProduceAsync(TMessageModel, string)"/>
         /// </summary>
         public RabbitMqPublisher<TMessageModel> PublishSynchronously()
         {
@@ -200,9 +200,10 @@ namespace Lykke.RabbitMqBroker.Publisher
         /// </remarks>
         /// <param name="message">Message to publish</param>
         /// <param name="delay">The delay</param>
-        public Task ProduceAsync(TMessageModel message, TimeSpan delay)
+        /// <param name="routingKey">Message routing key. Overrides routing key, which specified in the publisher settings</param>
+        public Task ProduceAsync(TMessageModel message, TimeSpan delay, string routingKey = null)
         {
-            return ProduceAsync(message, DateTime.UtcNow + delay);
+            return ProduceAsync(message, DateTime.UtcNow + delay, routingKey);
         }
 
         /// <summary>
@@ -215,8 +216,9 @@ namespace Lykke.RabbitMqBroker.Publisher
         /// </remarks>
         /// <param name="message">Message to publish</param>
         /// <param name="deliverAt">Moment, when message should be delivered</param>
+        /// <param name="routingKey">Message routing key. Overrides routing key, which specified in the publisher settings</param>
         /// <returns></returns>
-        public Task ProduceAsync(TMessageModel message, DateTime deliverAt)
+        public Task ProduceAsync(TMessageModel message, DateTime deliverAt, string routingKey = null)
         {
             ThrowIfNotStarted();
 
@@ -231,7 +233,31 @@ namespace Lykke.RabbitMqBroker.Publisher
 
             var body = _serializer.Serialize(message);
 
-            return _deferredMessagesManager.DeferAsync(body, deliverAt);
+            return _deferredMessagesManager.DeferAsync(new RawMessage(body, routingKey), deliverAt);
+        }
+
+        /// <summary>
+        /// Publish <paramref name="message"/> to underlying queue
+        /// </summary>
+        /// <param name="message">Message to publish</param>
+        /// <param name="routingKey">Message routing key. Overrides routing key, which specified in the publisher settings</param>
+        /// <remarks>Method is not thread safe</remarks>
+        /// <returns>Task to await</returns>
+        /// <exception cref="RabbitMqBrokerException">Some error occurred while publishing</exception>
+        public Task ProduceAsync(TMessageModel message, string routingKey)
+        {
+            ThrowIfNotStarted();
+
+            if (message == null)
+            {
+                throw new ArgumentNullException(nameof(message));
+            }
+            
+            var body = _serializer.Serialize(message);
+
+            _rawPublisher.Produce(new RawMessage(body, routingKey));
+
+            return Task.CompletedTask;
         }
 
         /// <summary>
@@ -243,18 +269,7 @@ namespace Lykke.RabbitMqBroker.Publisher
         /// <exception cref="RabbitMqBrokerException">Some error occurred while publishing</exception>
         public Task ProduceAsync(TMessageModel message)
         {
-            ThrowIfNotStarted();
-
-            if (message == null)
-            {
-                throw new ArgumentNullException(nameof(message));
-            }
-            
-            var body = _serializer.Serialize(message);
-
-            _rawPublisher.Produce(body);
-
-            return Task.CompletedTask;
+            return ProduceAsync(message, routingKey: null);
         }
 
         #endregion
@@ -391,7 +406,7 @@ namespace Lykke.RabbitMqBroker.Publisher
             return buffer;
         }
 
-        private void SaveQueue(IReadOnlyList<byte[]> bufferedMessages)
+        private void SaveQueue(IReadOnlyList<RawMessage> bufferedMessages)
         {
             if (_disableQueuePersistence)
             {
@@ -433,6 +448,5 @@ namespace Lykke.RabbitMqBroker.Publisher
         }
 
         #endregion
-
     }
 }

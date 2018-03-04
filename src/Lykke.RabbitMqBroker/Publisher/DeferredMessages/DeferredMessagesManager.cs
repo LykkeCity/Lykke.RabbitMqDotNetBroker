@@ -23,7 +23,7 @@ namespace Lykke.RabbitMqBroker.Publisher.DeferredMessages
             _publisher = publisher ?? throw new ArgumentNullException(nameof(publisher));
         }
 
-        public Task DeferAsync(byte[] message, DateTime deliverAt)
+        public Task DeferAsync(RawMessage message, DateTime deliverAt)
         {
             return _repository.SaveAsync(message, deliverAt);
         }

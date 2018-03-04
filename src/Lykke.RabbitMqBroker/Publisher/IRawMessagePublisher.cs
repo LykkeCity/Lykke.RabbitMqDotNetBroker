@@ -7,8 +7,8 @@ namespace Lykke.RabbitMqBroker.Publisher
     {
         string Name { get; }
         int BufferedMessagesCount { get; }
-        void Produce(byte[] body);
-        IReadOnlyList<byte[]> GetBufferedMessages();
+        void Produce(RawMessage message);
+        IReadOnlyList<RawMessage> GetBufferedMessages();
         void Stop();
     }
 }

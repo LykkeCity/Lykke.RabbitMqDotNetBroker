@@ -24,12 +24,12 @@ namespace Lykke.RabbitMqBroker.Publisher
             channel.ExchangeDeclare(exchange: settings.ExchangeName, type: "fanout", durable: _durable);
         }
 
-        public void Publish(RabbitMqSubscriptionSettings settings, IModel channel, byte[] body)
+        public void Publish(RabbitMqSubscriptionSettings settings, IModel channel, RawMessage message)
         {
             channel.BasicPublish(exchange: settings.ExchangeName,
-                      routingKey: _routingKey,
+                      routingKey: message.RoutingKey ?? _routingKey,
                       basicProperties: null,
-                      body: body);
+                      body: message.Body);
         }
     }
 }

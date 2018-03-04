@@ -7,21 +7,21 @@ namespace Lykke.RabbitMqBroker.Publisher
 {
     internal class InMemoryBuffer : IPublisherBuffer
     {
-        private readonly BlockingCollection<byte[]> _items;
+        private readonly BlockingCollection<RawMessage> _items;
 
         public InMemoryBuffer()
         {
-            _items = new BlockingCollection<byte[]>();
+            _items = new BlockingCollection<RawMessage>();
         }
 
         public int Count => _items.Count;
 
-        public void Enqueue(byte[] message, CancellationToken cancelationToken)
+        public void Enqueue(RawMessage message, CancellationToken cancelationToken)
         {
             _items.Add(message, cancelationToken);
         }
 
-        public byte[] Dequeue(CancellationToken cancelationToken)
+        public RawMessage Dequeue(CancellationToken cancelationToken)
         {
             return _items.Take(cancelationToken);
         }
@@ -31,9 +31,9 @@ namespace Lykke.RabbitMqBroker.Publisher
             _items.Dispose();
         }
 
-        public IEnumerator<byte[]> GetEnumerator()
+        public IEnumerator<RawMessage> GetEnumerator()
         {
-            return ((IEnumerable<byte[]>)_items).GetEnumerator();
+            return ((IEnumerable<RawMessage>)_items).GetEnumerator();
         }
 
         IEnumerator IEnumerable.GetEnumerator()
