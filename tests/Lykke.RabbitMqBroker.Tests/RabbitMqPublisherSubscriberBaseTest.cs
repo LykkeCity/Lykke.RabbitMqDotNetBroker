@@ -146,6 +146,7 @@ namespace RabbitMqBrokerTests
         protected class TestBuffer : IPublisherBuffer
         {
             private readonly BlockingCollection<RawMessage> _collection = new BlockingCollection<RawMessage>();
+            private bool _disposed;
 
             public readonly ManualResetEventSlim Gate = new ManualResetEventSlim(false);
 
@@ -161,7 +162,18 @@ namespace RabbitMqBrokerTests
 
             public void Dispose()
             {
+                Dispose(true);
+                GC.SuppressFinalize(this);
+            }
+        
+            protected virtual void Dispose(bool disposing)
+            {
+                if (_disposed || !disposing)
+                    return; 
+            
                 _collection.Dispose();
+            
+                _disposed = true;
             }
 
             public int Count => _collection.Count;

@@ -9,13 +9,10 @@ namespace RabbitMqBrokerTests
 {
     public sealed class RabbitManagementClient : IRabbitManagementClient
     {
-        private readonly string _user;
-        private readonly string _password;
         private readonly HttpClient _client;
+        
         public RabbitManagementClient(string rabbitUrl, string user, string password)
         {
-            _user = user;
-            _password = password;
             _client = new HttpClient
             {
                 BaseAddress = new Uri(rabbitUrl)

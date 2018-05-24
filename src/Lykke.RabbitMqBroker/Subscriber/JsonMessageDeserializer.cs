@@ -9,7 +9,7 @@ namespace Lykke.RabbitMqBroker.Subscriber
     public class JsonMessageDeserializer<TMessage> : IMessageDeserializer<TMessage>
     {
         private readonly Encoding _encoding;
-        private JsonSerializer _serializer;
+        private readonly JsonSerializer _serializer;
 
         public JsonMessageDeserializer() :
             this(null, null)

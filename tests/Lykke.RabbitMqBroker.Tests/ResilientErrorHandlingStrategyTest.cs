@@ -12,18 +12,16 @@ namespace RabbitMqBrokerTests
     internal class ResilientErrorHandlingStrategyTest
     {
         private ResilientErrorHandlingStrategy _strategy;
-        private ILog _log;
-        private RabbitMqSubscriptionSettings _settings;
 
         [SetUp]
         public void SetUp()
         {
-            _log = Substitute.For<ILog>();
-            _settings = new RabbitMqSubscriptionSettings
+            ILog log = Substitute.For<ILog>();
+            RabbitMqSubscriptionSettings settings = new RabbitMqSubscriptionSettings
             {
                 QueueName = "QueueName"
             };
-            _strategy = new ResilientErrorHandlingStrategy(_log, _settings, TimeSpan.FromMilliseconds(5));
+            _strategy = new ResilientErrorHandlingStrategy(log, settings, TimeSpan.FromMilliseconds(5));
         }
 
         [Test]
