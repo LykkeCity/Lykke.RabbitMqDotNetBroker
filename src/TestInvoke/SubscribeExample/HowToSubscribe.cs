@@ -6,7 +6,7 @@ using Lykke.RabbitMqBroker.Subscriber;
 
 namespace TestInvoke.SubscribeExample
 {
-    public class HowToSubscribe
+    public static class HowToSubscribe
     {
         private static RabbitMqSubscriber<string> _connector;
         public static void Example(RabbitMqSubscriptionSettings settings)

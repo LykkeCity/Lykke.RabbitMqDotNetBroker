@@ -41,6 +41,7 @@ namespace Lykke.RabbitMqBroker.Subscriber
         private IConsole _console;
         private int _reconnectionsInARowCount;
         private CancellationTokenSource _cancellationTokenSource;
+        private bool _disposed;
 
         public RabbitMqSubscriber(
             RabbitMqSubscriptionSettings settings,
@@ -307,7 +308,18 @@ namespace Lykke.RabbitMqBroker.Subscriber
 
         public void Dispose()
         {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+        
+        protected virtual void Dispose(bool disposing)
+        {
+            if (_disposed || !disposing)
+                return; 
+            
             ((IStopable)this).Stop();
+            
+            _disposed = true;
         }
 
         private IOperationHolder<DependencyTelemetry> InitTelemetryOperation(int binaryLength)

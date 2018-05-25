@@ -35,6 +35,7 @@ namespace Lykke.RabbitMqBroker.Publisher
         private RabbitMqPublisherQueueMonitor<TMessageModel> _queueMonitor;
         private DeferredMessagesManager _deferredMessagesManager;
         private bool _publishSynchronously;
+        private bool _disposed;
 
         // Implementation
 
@@ -369,10 +370,21 @@ namespace Lykke.RabbitMqBroker.Publisher
                 rawPublisher.Dispose();
             }
         }
-
+        
         public void Dispose()
         {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+        
+        protected virtual void Dispose(bool disposing)
+        {
+            if (_disposed || !disposing)
+                return; 
+            
             Stop();
+            
+            _disposed = true;
         }
 
         #endregion

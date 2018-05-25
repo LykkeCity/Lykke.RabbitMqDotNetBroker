@@ -33,6 +33,7 @@ namespace Lykke.RabbitMqBroker.Publisher
         private readonly CancellationTokenSource _cancellationTokenSource;
         private readonly TelemetryClient _telemetry = new TelemetryClient();
         private readonly string _exchangeQueueName;
+        private bool _disposed;
 
         private Exception _lastPublishException;
         private int _reconnectionsInARowCount;
@@ -122,11 +123,22 @@ namespace Lykke.RabbitMqBroker.Publisher
 
         public void Dispose()
         {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+        
+        protected virtual void Dispose(bool disposing)
+        {
+            if (_disposed || !disposing)
+                return; 
+            
             Stop();
-
+            
             _publishLock?.Dispose();
             _buffer?.Dispose();
             _cancellationTokenSource?.Dispose();
+            
+            _disposed = true;
         }
         
         private bool IsStopped()
