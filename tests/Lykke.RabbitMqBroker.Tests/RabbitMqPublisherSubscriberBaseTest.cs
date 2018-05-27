@@ -5,7 +5,6 @@ using System.Text;
 using Common.Log;
 using Lykke.RabbitMqBroker.Publisher;
 using Lykke.RabbitMqBroker.Subscriber;
-using Microsoft.Extensions.Configuration;
 using NSubstitute;
 using NUnit.Framework;
 using RabbitMQ.Client;
@@ -23,7 +22,7 @@ namespace RabbitMqBrokerTests
         protected RabbitMqSubscriptionSettings _settings;
         protected IConsole _console;
         protected ILog Log;
-        protected string RabbitConnectionString;
+        protected const string RabbitConnectionString = "amqp://[username]:[password]@[URL]:5672/IntegrationTests";
 
         protected const string ExchangeName = "TestExchange";
         protected const string QueueName = "TestQueue";
@@ -44,8 +43,6 @@ namespace RabbitMqBrokerTests
         {
             _console = new ConsoleLWriter(Console.Write);
             Log = Substitute.For<ILog>();
-            ReadConfiguration();
-
 
             _settings = new RabbitMqSubscriptionSettings
             {
@@ -60,16 +57,6 @@ namespace RabbitMqBrokerTests
             _factory = new ConnectionFactory { Uri = RabbitConnectionString };
 
             EnsureRabbitInstalledAndRun();
-        }
-
-        private void ReadConfiguration()
-        {
-            var builder = new ConfigurationBuilder()
-                .SetBasePath(Directory.GetCurrentDirectory())
-                .AddJsonFile("appsettings.json", optional: false)
-                .AddJsonFile("appsettings.Development.json", optional: true);
-            var config = builder.Build();
-            RabbitConnectionString = config["RabbitMqConnectionString"];
         }
 
         private void EnsureRabbitInstalledAndRun()
