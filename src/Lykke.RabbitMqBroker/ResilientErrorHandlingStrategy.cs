@@ -2,10 +2,13 @@
 using System.Threading;
 using System.Threading.Tasks;
 using Common.Log;
+using JetBrains.Annotations;
+using Lykke.Common.Log;
 using Lykke.RabbitMqBroker.Subscriber;
 
 namespace Lykke.RabbitMqBroker
 {
+    [PublicAPI]
     public sealed class ResilientErrorHandlingStrategy : IErrorHandlingStrategy
     {
         private readonly ILog _log;
@@ -14,6 +17,7 @@ namespace Lykke.RabbitMqBroker
         private readonly int _retryNum;
         private readonly IErrorHandlingStrategy _next;
 
+        [Obsolete]
         public ResilientErrorHandlingStrategy(ILog log, RabbitMqSubscriptionSettings settings, TimeSpan retryTimeout, int retryNum = 5, IErrorHandlingStrategy next = null)
         {
             if (log == null)
@@ -31,6 +35,34 @@ namespace Lykke.RabbitMqBroker
             _retryNum = retryNum;
             _next = next;
         }
+
+        public ResilientErrorHandlingStrategy(
+            [NotNull] ILogFactory logFactory, 
+            [NotNull] RabbitMqSubscriptionSettings settings, 
+            TimeSpan retryTimeout, 
+            int retryNum = 5, 
+            IErrorHandlingStrategy next = null)
+        {
+            if (logFactory == null)
+            {
+                throw new ArgumentNullException(nameof(logFactory));
+            }
+            if (retryTimeout <= TimeSpan.Zero)
+            {
+                throw new ArgumentOutOfRangeException(nameof(retryTimeout), retryTimeout, "Should be positive time span");
+            }
+            if (retryNum <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(retryNum), retryNum, "Should be positive number");
+            }
+
+            _log = logFactory.CreateLog(this);
+            _settings = settings ?? throw new ArgumentNullException(nameof(settings));
+            _retryTimeout = retryTimeout;
+            _retryNum = retryNum;
+            _next = next;
+        }
+
         public void Execute(Action handler, IMessageAcceptor ma, CancellationToken cancellationToken)
         {
             var isAllAttemptsFailed = false;

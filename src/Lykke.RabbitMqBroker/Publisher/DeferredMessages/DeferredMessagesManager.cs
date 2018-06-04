@@ -4,6 +4,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using Common;
 using Common.Log;
+using JetBrains.Annotations;
+using Lykke.Common.Log;
 
 namespace Lykke.RabbitMqBroker.Publisher.DeferredMessages
 {
@@ -12,10 +14,21 @@ namespace Lykke.RabbitMqBroker.Publisher.DeferredMessages
         private readonly IDeferredMessagesRepository _repository;
         private IRawMessagePublisher _publisher;
         
+        [Obsolete]
         public DeferredMessagesManager(IDeferredMessagesRepository repository, TimeSpan delayPrecision, ILog log) :
             base(nameof(DeferredMessagesManager), (int)delayPrecision.TotalMilliseconds, log)
         {
             _repository = repository;
+        }
+
+        public DeferredMessagesManager(
+            [NotNull] IDeferredMessagesRepository repository, 
+            TimeSpan delayPrecision,
+            [NotNull] ILogFactory logFactory) :
+
+            base(delayPrecision, logFactory)
+        {
+            _repository = repository ?? throw new ArgumentNullException(nameof(repository));
         }
 
         public void PublishUsing(IRawMessagePublisher publisher)

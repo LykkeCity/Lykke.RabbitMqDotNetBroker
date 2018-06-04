@@ -1,6 +1,7 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
 using Common;
+using Lykke.Logs;
 using Lykke.RabbitMqBroker.Publisher;
 using NUnit.Framework;
 
@@ -15,14 +16,13 @@ namespace RabbitMqBrokerTests
         public void SetUp()
         {
 
-            _publisher = new RabbitMqPublisher<string>(_settings);
+            _publisher = new RabbitMqPublisher<string>(EmptyLogFactory.Instance, _settings);
 
             _publisher
                 .SetConsole(_console)
                 .SetPublishStrategy(new DefaultFanoutPublishStrategy(_settings))
                 .DisableInMemoryQueuePersistence()
-                .SetSerializer(new TestMessageSerializer())
-                .SetLogger(Log);
+                .SetSerializer(new TestMessageSerializer());
 
         }
 

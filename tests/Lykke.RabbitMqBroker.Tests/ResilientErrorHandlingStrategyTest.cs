@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Threading;
-using Common.Log;
+using Lykke.Logs;
 using Lykke.RabbitMqBroker;
 using Lykke.RabbitMqBroker.Subscriber;
 using NSubstitute;
@@ -16,12 +16,11 @@ namespace RabbitMqBrokerTests
         [SetUp]
         public void SetUp()
         {
-            ILog log = Substitute.For<ILog>();
             RabbitMqSubscriptionSettings settings = new RabbitMqSubscriptionSettings
             {
                 QueueName = "QueueName"
             };
-            _strategy = new ResilientErrorHandlingStrategy(log, settings, TimeSpan.FromMilliseconds(5));
+            _strategy = new ResilientErrorHandlingStrategy(EmptyLogFactory.Instance, settings, TimeSpan.FromMilliseconds(5));
         }
 
         [Test]

@@ -7,6 +7,7 @@ using Autofac;
 using Common;
 using Common.Log;
 using JetBrains.Annotations;
+using Lykke.Common.Log;
 using Lykke.RabbitMqBroker.Publisher.DeferredMessages;
 using Lykke.RabbitMqBroker.Subscriber;
 
@@ -44,13 +45,27 @@ namespace Lykke.RabbitMqBroker.Publisher
         // For testing
 
         private IPublisherBuffer _bufferOverriding;
+        private ILogFactory _logFactory;
 
         public int BufferedMessagesCount => _rawPublisher?.BufferedMessagesCount ?? 0;
 
+        [Obsolete]
         public RabbitMqPublisher(RabbitMqSubscriptionSettings settings, bool submitTelemetry = true)
         {
             _settings = settings;
             _submitTelemetry = submitTelemetry;
+        }
+
+        public RabbitMqPublisher(
+            [NotNull] ILogFactory logFactory, 
+            [NotNull] RabbitMqSubscriptionSettings settings,
+            bool submitTelemetry = true)
+        {
+            _logFactory = logFactory ?? throw new ArgumentNullException(nameof(logFactory));
+            _settings = settings ?? throw new ArgumentNullException(nameof(settings));
+            _submitTelemetry = submitTelemetry;
+
+            _log = logFactory.CreateLog(this);
         }
 
         #region Configurator
@@ -110,7 +125,14 @@ namespace Lykke.RabbitMqBroker.Publisher
 
             _queueMonitor?.Dispose();
 
-            _queueMonitor = new RabbitMqPublisherQueueMonitor<TMessageModel>(queueSizeThreshold, monitorPeriod ?? TimeSpan.FromSeconds(60), _log);
+            if (_logFactory == null)
+            {
+                _queueMonitor = new RabbitMqPublisherQueueMonitor<TMessageModel>(queueSizeThreshold, monitorPeriod ?? TimeSpan.FromSeconds(60), _log);
+            }
+            else
+            {
+                _queueMonitor = new RabbitMqPublisherQueueMonitor<TMessageModel>(queueSizeThreshold, monitorPeriod ?? TimeSpan.FromSeconds(60), _logFactory);
+            }
 
             return this;
         }
@@ -137,7 +159,14 @@ namespace Lykke.RabbitMqBroker.Publisher
 
             _deferredMessagesManager?.Dispose();
 
-            _deferredMessagesManager = new DeferredMessagesManager(repository, deliveryPrecision ?? TimeSpan.FromSeconds(1), _log);
+            if (_logFactory == null)
+            {
+                _deferredMessagesManager = new DeferredMessagesManager(repository, deliveryPrecision ?? TimeSpan.FromSeconds(1), _log);
+            }
+            else
+            {
+                _deferredMessagesManager = new DeferredMessagesManager(repository, deliveryPrecision ?? TimeSpan.FromSeconds(1), _logFactory);
+            }
 
             return this;
         }
@@ -170,6 +199,7 @@ namespace Lykke.RabbitMqBroker.Publisher
             return this;
         }
 
+        [Obsolete("Use ctor with ILogFactory")]
         public RabbitMqPublisher<TMessageModel> SetLogger(ILog log)
         {
             ThrowIfStarted();
@@ -313,15 +343,30 @@ namespace Lykke.RabbitMqBroker.Publisher
 
             var messagesBuffer = _bufferOverriding ?? LoadQueue();
 
-            _rawPublisher = new RawMessagePublisher(
-                Name,
-                _log,
-                _console,
-                messagesBuffer,
-                _publishStrategy,
-                _settings,
-                _publishSynchronously,
-                _submitTelemetry);
+            if (_logFactory == null)
+            {
+                _rawPublisher = new RawMessagePublisher(
+                    Name,
+                    _log,
+                    _console,
+                    messagesBuffer,
+                    _publishStrategy,
+                    _settings,
+                    _publishSynchronously,
+                    _submitTelemetry);
+            }
+            else
+            {
+                _rawPublisher = new RawMessagePublisher(
+                    Name,
+                    _logFactory,
+                    _console,
+                    messagesBuffer,
+                    _publishStrategy,
+                    _settings,
+                    _publishSynchronously,
+                    _submitTelemetry);
+            }
 
             _queueMonitor.WatchThis(_rawPublisher);
             _queueMonitor.Start();

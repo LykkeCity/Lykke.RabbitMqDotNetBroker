@@ -3,6 +3,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Common;
+using Lykke.Logs;
 using Lykke.RabbitMqBroker;
 using Lykke.RabbitMqBroker.Subscriber;
 using NUnit.Framework;
@@ -21,9 +22,12 @@ namespace RabbitMqBrokerTests
 
         public void SetUp()
         {
-            _subscriber = new RabbitMqSubscriber<string>(_settings, new DefaultErrorHandlingStrategy(Log, _settings), true)
+            _subscriber = new RabbitMqSubscriber<string>(
+                    EmptyLogFactory.Instance, 
+                    _settings, 
+                    new DefaultErrorHandlingStrategy(EmptyLogFactory.Instance, _settings), 
+                    submitTelemetry: true)
                 .SetConsole(_console)
-                .SetLogger(Log)
                 .CreateDefaultBinding()
                 .SetMessageDeserializer(new DefaultStringDeserializer());
         }
@@ -55,8 +59,10 @@ namespace RabbitMqBrokerTests
         [Test]
         public void ShouldUseDeadLetterQueueOnException()
         {
-            _subscriber = new RabbitMqSubscriber<string>(_settings, new DeadQueueErrorHandlingStrategy(Log, _settings))
-                .SetLogger(Log)
+            _subscriber = new RabbitMqSubscriber<string>(
+                    EmptyLogFactory.Instance,
+                    _settings, 
+                    new DeadQueueErrorHandlingStrategy(EmptyLogFactory.Instance, _settings))
                 .CreateDefaultBinding()
                 .SetMessageDeserializer(new DefaultStringDeserializer());
 
