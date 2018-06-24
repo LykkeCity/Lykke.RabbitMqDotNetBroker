@@ -8,13 +8,15 @@ using Microsoft.ApplicationInsights;
 using Microsoft.ApplicationInsights.DataContracts;
 using Microsoft.ApplicationInsights.Extensibility;
 using Common.Log;
+using JetBrains.Annotations;
+using Lykke.Common.Log;
 using Lykke.RabbitMqBroker.Subscriber;
 
 using RabbitMQ.Client;
 
 namespace Lykke.RabbitMqBroker.Publisher
 {
-    internal class RawMessagePublisher : IRawMessagePublisher
+    internal sealed class RawMessagePublisher : IRawMessagePublisher
     {
         public string Name { get; }
         public int BufferedMessagesCount => _buffer.Count;
@@ -38,9 +40,10 @@ namespace Lykke.RabbitMqBroker.Publisher
         private Exception _lastPublishException;
         private int _reconnectionsInARowCount;
 
+        [Obsolete]
         public RawMessagePublisher(
             string name,
-            ILog log, 
+            ILog log,
             IConsole console,
             IPublisherBuffer buffer,
             IRabbitMqPublishStrategy publishStrategy,
@@ -57,6 +60,43 @@ namespace Lykke.RabbitMqBroker.Publisher
             _publishStrategy = publishStrategy;
             _submitTelemetry = submitTelemetry;
             _exchangeQueueName = _settings.GetQueueOrExchangeName();
+
+            _publishLock = new AutoResetEvent(false);
+            _cancellationTokenSource = new CancellationTokenSource();
+
+            _thread = new Thread(ConnectionThread)
+            {
+                Name = "RabbitMqPublisherLoop"
+            };
+
+            _thread.Start();
+        }
+
+        public RawMessagePublisher(
+            [NotNull] string name,
+            [NotNull] ILogFactory logFactory, 
+            [NotNull] IConsole console,
+            [NotNull] IPublisherBuffer buffer,
+            [NotNull] IRabbitMqPublishStrategy publishStrategy,
+            [NotNull] RabbitMqSubscriptionSettings settings,
+            bool publishSynchronously,
+            bool submitTelemetry)
+        {
+            if (logFactory == null)
+            {
+                throw new ArgumentNullException(nameof(logFactory));
+            }
+
+            Name = name ?? throw new ArgumentNullException(nameof(name));
+            _console = console ?? throw new ArgumentNullException(nameof(console));
+            _buffer = buffer ?? throw new ArgumentNullException(nameof(buffer));
+            _settings = settings ?? throw new ArgumentNullException(nameof(settings));
+            _publishSynchronously = publishSynchronously;
+            _publishStrategy = publishStrategy ?? throw new ArgumentNullException(nameof(publishStrategy));
+            _submitTelemetry = submitTelemetry;
+            _exchangeQueueName = _settings.GetQueueOrExchangeName();
+
+            _log = logFactory.CreateLog(this, Name);
 
             _publishLock = new AutoResetEvent(false);
             _cancellationTokenSource = new CancellationTokenSource();
@@ -124,10 +164,9 @@ namespace Lykke.RabbitMqBroker.Publisher
         public void Dispose()
         {
             Dispose(true);
-            GC.SuppressFinalize(this);
         }
-        
-        protected virtual void Dispose(bool disposing)
+
+        private void Dispose(bool disposing)
         {
             if (_disposed || !disposing)
                 return; 

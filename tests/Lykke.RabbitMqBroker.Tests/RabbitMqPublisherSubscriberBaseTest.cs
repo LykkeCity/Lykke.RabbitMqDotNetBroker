@@ -21,7 +21,6 @@ namespace RabbitMqBrokerTests
         protected IConnectionFactory _factory;
         protected RabbitMqSubscriptionSettings _settings;
         protected IConsole _console;
-        protected ILog Log;
         protected const string RabbitConnectionString = "amqp://[username]:[password]@[URL]:5672/IntegrationTests";
 
         protected const string ExchangeName = "TestExchange";
@@ -42,7 +41,6 @@ namespace RabbitMqBrokerTests
         public void SetUpBase()
         {
             _console = new ConsoleLWriter(Console.Write);
-            Log = Substitute.For<ILog>();
 
             _settings = new RabbitMqSubscriptionSettings
             {

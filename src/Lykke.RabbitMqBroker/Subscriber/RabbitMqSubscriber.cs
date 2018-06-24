@@ -10,22 +10,15 @@ using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using Common;
 using Common.Log;
+using JetBrains.Annotations;
+using Lykke.Common.Log;
 
 namespace Lykke.RabbitMqBroker.Subscriber
 {
-    public interface IMessageDeserializer<out TModel>
-    {
-        TModel Deserialize(byte[] data);
-    }
-
-    public interface IMessageReadStrategy
-    {
-        string Configure(RabbitMqSubscriptionSettings settings, IModel channel);
-    }
-
+    [PublicAPI]
     public class RabbitMqSubscriber<TTopicModel> : IStartable, IStopable, IMessageConsumer<TTopicModel>
     {
-        private const string _telemetryType = "RabbitMq Subscriber";
+        private const string TelemetryType = "RabbitMq Subscriber";
         private Func<TTopicModel, Task> _eventHandler;
         private Func<TTopicModel, CancellationToken, Task> _cancallableEventHandler;
         private readonly RabbitMqSubscriptionSettings _settings;
@@ -43,6 +36,7 @@ namespace Lykke.RabbitMqBroker.Subscriber
         private CancellationTokenSource _cancellationTokenSource;
         private bool _disposed;
 
+        [Obsolete]
         public RabbitMqSubscriber(
             RabbitMqSubscriptionSettings settings,
             IErrorHandlingStrategy errorHandlingStrategy,
@@ -50,6 +44,24 @@ namespace Lykke.RabbitMqBroker.Subscriber
         {
             _settings = settings;
             _errorHandlingStrategy = errorHandlingStrategy;
+            _submitTelemetry = submitTelemetry;
+            _exchangeQueueName = _settings.GetQueueOrExchangeName();
+        }
+
+        public RabbitMqSubscriber(
+            [NotNull] ILogFactory logFactory,
+            [NotNull] RabbitMqSubscriptionSettings settings,
+            [NotNull] IErrorHandlingStrategy errorHandlingStrategy,
+            bool submitTelemetry = true)
+        {
+            if (logFactory == null)
+            {
+                throw new ArgumentNullException(nameof(logFactory));
+            }
+
+            _log = logFactory.CreateLog(this);
+            _settings = settings ?? throw new ArgumentNullException(nameof(settings));
+            _errorHandlingStrategy = errorHandlingStrategy ?? throw new ArgumentNullException(nameof(errorHandlingStrategy));
             _submitTelemetry = submitTelemetry;
             _exchangeQueueName = _settings.GetQueueOrExchangeName();
         }
@@ -77,6 +89,7 @@ namespace Lykke.RabbitMqBroker.Subscriber
             return this;
         }
 
+        [Obsolete("Use ctor with ILogFactory")]
         public RabbitMqSubscriber<TTopicModel> SetLogger(ILog log)
         {
             _log = log;
@@ -325,7 +338,7 @@ namespace Lykke.RabbitMqBroker.Subscriber
         private IOperationHolder<DependencyTelemetry> InitTelemetryOperation(int binaryLength)
         {
             var operation = _telemetry.StartOperation<DependencyTelemetry>(_exchangeQueueName);
-            operation.Telemetry.Type = _telemetryType;
+            operation.Telemetry.Type = TelemetryType;
             operation.Telemetry.Target = _exchangeQueueName;
             operation.Telemetry.Name = _typeName;
             operation.Telemetry.Data = $"Binary length {binaryLength}";

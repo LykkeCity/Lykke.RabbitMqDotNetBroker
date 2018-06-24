@@ -2,6 +2,8 @@
 using System.Threading.Tasks;
 using Common;
 using Common.Log;
+using JetBrains.Annotations;
+using Lykke.Common.Log;
 
 namespace Lykke.RabbitMqBroker.Publisher
 {
@@ -11,11 +13,33 @@ namespace Lykke.RabbitMqBroker.Publisher
         private readonly ILog _log;
         private IRawMessagePublisher _publisher;
 
+        [Obsolete]
         public RabbitMqPublisherQueueMonitor(int queueSizeThreshold, TimeSpan checkPeriod, ILog log) :
             base(nameof(RabbitMqPublisherQueueMonitor<T>), (int)checkPeriod.TotalMilliseconds, log)
         {
             _queueSizeThreshold = queueSizeThreshold;
             _log = log;
+        }
+
+        public RabbitMqPublisherQueueMonitor(
+            int queueSizeThreshold, 
+            TimeSpan checkPeriod, 
+            [NotNull] ILogFactory logFactory) :
+
+            base(checkPeriod, logFactory)
+        {
+            if (logFactory == null)
+            {
+                throw new ArgumentNullException(nameof(logFactory));
+            }
+            if (queueSizeThreshold < 1)
+            {
+                throw new ArgumentOutOfRangeException(nameof(queueSizeThreshold), queueSizeThreshold, "Should be positive number");
+            }
+
+            _queueSizeThreshold = queueSizeThreshold;
+
+            _log = logFactory.CreateLog(this);
         }
 
         public void WatchThis(IRawMessagePublisher publisher)

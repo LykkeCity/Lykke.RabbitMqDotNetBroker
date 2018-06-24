@@ -1,22 +1,18 @@
 ﻿using System.Threading.Tasks;
 using Common;
+using Lykke.Logs;
 using Lykke.RabbitMqBroker.Publisher;
 using NUnit.Framework;
 
 namespace RabbitMqBrokerTests
 {
     using System;
-    using System.Threading;
-
     using Lykke.RabbitMqBroker;
     using Lykke.RabbitMqBroker.Subscriber;
 
     using Newtonsoft.Json;
 
     using NSubstitute;
-    using NSubstitute.Core;
-    using NSubstitute.Core.Arguments;
-
     using RabbitMQ.Client;
 
     [TestFixture(Category = "Integration"), Explicit]
@@ -27,14 +23,13 @@ namespace RabbitMqBrokerTests
         [SetUp]
         public void SetUp()
         {
-            _publisher = new RabbitMqPublisher<string>(_settings);
+            _publisher = new RabbitMqPublisher<string>(EmptyLogFactory.Instance, _settings);
 
             _publisher
                 .SetConsole(_console)
                 .SetPublishStrategy(new DefaultFanoutPublishStrategy(_settings))
                 .DisableInMemoryQueuePersistence()
-                .SetSerializer(new TestMessageSerializer())
-                .SetLogger(Log);
+                .SetSerializer(new TestMessageSerializer());
         }
 
         [TearDown]
@@ -62,14 +57,13 @@ namespace RabbitMqBrokerTests
         [Test]
         public void ShouldNotPublishNonSeriazableMessage()
         {
-            var publisher = new RabbitMqPublisher<ComplexType>(_settings);
+            var publisher = new RabbitMqPublisher<ComplexType>(EmptyLogFactory.Instance, _settings);
 
             publisher
                 .SetConsole(_console)
                 .SetPublishStrategy(new DefaultFanoutPublishStrategy(_settings))
                 .DisableInMemoryQueuePersistence()
                 .SetSerializer(new JsonMessageSerializer<ComplexType>())
-                .SetLogger(Log)
                 .Start();
 
             var invalidObj = new ComplexType

@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Threading;
-using Common.Log;
+using Lykke.Logs;
 using Lykke.RabbitMqBroker;
 using Lykke.RabbitMqBroker.Subscriber;
 using NSubstitute;
@@ -12,18 +12,16 @@ namespace RabbitMqBrokerTests
     public class DefaultErrorHandlingStrategyTest
     {
         private DefaultErrorHandlingStrategy _strategy;
-        private ILog _log;
         private RabbitMqSubscriptionSettings _settings;
 
         [SetUp]
         public void SetUp()
         {
-            _log = Substitute.For<ILog>();
             _settings = new RabbitMqSubscriptionSettings
             {
                 QueueName = "QueueName"
             };
-            _strategy = new DefaultErrorHandlingStrategy(_log, _settings);
+            _strategy = new DefaultErrorHandlingStrategy(EmptyLogFactory.Instance, _settings);
         }
 
         [Test]
@@ -40,7 +38,7 @@ namespace RabbitMqBrokerTests
         public void ShouldResendToNextHandlerOnError()
         {
             var nextHandler = Substitute.For<IErrorHandlingStrategy>();
-            _strategy = new DefaultErrorHandlingStrategy(_log, _settings, nextHandler);
+            _strategy = new DefaultErrorHandlingStrategy(EmptyLogFactory.Instance, _settings, nextHandler);
 
             var handler = new Action(() => throw new Exception());
             var acceptor = Substitute.For<IMessageAcceptor>();

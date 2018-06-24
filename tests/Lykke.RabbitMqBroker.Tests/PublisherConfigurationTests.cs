@@ -1,5 +1,5 @@
 ﻿using System;
-using Common.Log;
+using Lykke.Logs;
 using Lykke.RabbitMqBroker.Publisher;
 using Lykke.RabbitMqBroker.Subscriber;
 using NUnit.Framework;
@@ -26,10 +26,9 @@ namespace RabbitMqBrokerTests
                 RoutingKey = "RoutingKey"
             };
 
-            _publisher = new RabbitMqPublisher<string>(settings);
+            _publisher = new RabbitMqPublisher<string>(EmptyLogFactory.Instance, settings);
 
             _publisher
-                .SetLogger(Substitute.For<ILog>())
                 .SetPublishStrategy(new DefaultFanoutPublishStrategy(settings))
                 .SetSerializer(new JsonMessageSerializer<string>());
         }
