@@ -75,7 +75,7 @@ namespace Lykke.RabbitMqBroker.Publisher
         public RawMessagePublisher(
             [NotNull] string name,
             [NotNull] ILogFactory logFactory, 
-            [NotNull] IConsole console,
+            [CanBeNull] IConsole console,
             [NotNull] IPublisherBuffer buffer,
             [NotNull] IRabbitMqPublishStrategy publishStrategy,
             [NotNull] RabbitMqSubscriptionSettings settings,
@@ -88,7 +88,7 @@ namespace Lykke.RabbitMqBroker.Publisher
             }
 
             Name = name ?? throw new ArgumentNullException(nameof(name));
-            _console = console ?? throw new ArgumentNullException(nameof(console));
+            _console = console;
             _buffer = buffer ?? throw new ArgumentNullException(nameof(buffer));
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             _publishSynchronously = publishSynchronously;
