@@ -14,9 +14,7 @@ namespace Lykke.RabbitMqBroker.Publisher
             using (var stream = new MemoryStream())
             {
                 ProtoBuf.Serializer.Serialize(stream, model);
-
                 stream.Flush();
-
                 return stream.ToArray();
             }
         }

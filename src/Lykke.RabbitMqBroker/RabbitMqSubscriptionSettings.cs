@@ -7,6 +7,7 @@ namespace Lykke.RabbitMqBroker.Subscriber
     public sealed class RabbitMqSubscriptionSettings
     {
         public string ConnectionString { get; set; }
+        public string AlternativeConnectionString { get; set; }
         public string QueueName { get; set; }
         public string ExchangeName { get; set; }
         public bool IsDurable { get; set; }

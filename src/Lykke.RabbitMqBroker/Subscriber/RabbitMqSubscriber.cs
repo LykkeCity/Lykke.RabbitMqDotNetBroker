@@ -12,6 +12,8 @@ using Common;
 using Common.Log;
 using JetBrains.Annotations;
 using Lykke.Common.Log;
+using Lykke.RabbitMqBroker.Deduplication;
+using Newtonsoft.Json;
 
 namespace Lykke.RabbitMqBroker.Subscriber
 {
@@ -27,8 +29,12 @@ namespace Lykke.RabbitMqBroker.Subscriber
         private readonly TelemetryClient _telemetry = new TelemetryClient();
         private readonly string _exchangeQueueName;
         private readonly string _typeName = typeof(TTopicModel).Name;
+        private readonly bool _useAlternativeExchange;
+        private readonly bool _enableMessageDeduplication;
+        private readonly IDeduplicator _deduplicator;
         private ILog _log;
         private Thread _thread;
+        private Thread _alternateThread;
         private IMessageDeserializer<TTopicModel> _messageDeserializer;
         private IMessageReadStrategy _messageReadStrategy;
         private IConsole _console;
@@ -46,6 +52,11 @@ namespace Lykke.RabbitMqBroker.Subscriber
             _errorHandlingStrategy = errorHandlingStrategy;
             _submitTelemetry = submitTelemetry;
             _exchangeQueueName = _settings.GetQueueOrExchangeName();
+
+            _useAlternativeExchange = !string.IsNullOrWhiteSpace(_settings.AlternativeConnectionString);
+            _enableMessageDeduplication = _useAlternativeExchange;
+            if (_enableMessageDeduplication)
+                _deduplicator = new InMemoryDeduplcator();
         }
 
         public RabbitMqSubscriber(
@@ -64,6 +75,11 @@ namespace Lykke.RabbitMqBroker.Subscriber
             _errorHandlingStrategy = errorHandlingStrategy ?? throw new ArgumentNullException(nameof(errorHandlingStrategy));
             _submitTelemetry = submitTelemetry;
             _exchangeQueueName = _settings.GetQueueOrExchangeName();
+
+            _useAlternativeExchange = !string.IsNullOrWhiteSpace(_settings.AlternativeConnectionString);
+            _enableMessageDeduplication = _useAlternativeExchange;
+            if(_enableMessageDeduplication)
+                _deduplicator = new InMemoryDeduplcator();
         }
 
         #region Configurator
@@ -126,30 +142,31 @@ namespace Lykke.RabbitMqBroker.Subscriber
             return _cancellationTokenSource == null || _cancellationTokenSource.IsCancellationRequested;
         }
 
-        private async void ReadThread()
+        private async void ReadThread(object parameter)
         {
+            var settings = (RabbitMqSubscriptionSettings) parameter;
             while (!IsStopped())
             {
                 try
                 {
                     try
                     {
-                        ConnectAndReadAsync();
+                        ConnectAndReadAsync(settings);
                     }
                     catch (Exception ex)
                     {
-                        _console?.WriteLine($"{_settings.GetSubscriberName()}: ERROR: {ex.Message}");
+                        _console?.WriteLine($"{settings.GetSubscriberName()}: ERROR: {ex.Message}");
 
-                        if (_reconnectionsInARowCount > _settings.ReconnectionsCountToAlarm)
+                        if (_reconnectionsInARowCount > settings.ReconnectionsCountToAlarm)
                         {
-                            await _log.WriteFatalErrorAsync(_settings.GetSubscriberName(), nameof(ReadThread), new Uri(_settings.ConnectionString).Authority, ex);
+                            await _log.WriteFatalErrorAsync(settings.GetSubscriberName(), nameof(ReadThread), new Uri(settings.ConnectionString).Authority, ex);
 
                             _reconnectionsInARowCount = 0;
                         }
 
                         _reconnectionsInARowCount++;
 
-                        await Task.Delay(_settings.ReconnectionDelay, _cancellationTokenSource.Token);
+                        await Task.Delay(settings.ReconnectionDelay, _cancellationTokenSource.Token);
                     }
                 }
                 // Saves the loop if nothing didn't help
@@ -159,21 +176,21 @@ namespace Lykke.RabbitMqBroker.Subscriber
                 }
             }
 
-            _console?.WriteLine($"{_settings.GetSubscriberName()}: is stopped");
+            _console?.WriteLine($"{settings.GetSubscriberName()}: is stopped");
         }
 
-        private void ConnectAndReadAsync()
+        private void ConnectAndReadAsync(RabbitMqSubscriptionSettings settings)
         {
-            var factory = new ConnectionFactory { Uri = _settings.ConnectionString };
-            _console?.WriteLine($"{_settings.GetSubscriberName()}: trying to connect to {_settings.ConnectionString} ({_exchangeQueueName})");
+            var factory = new ConnectionFactory { Uri = settings.ConnectionString };
+            _console?.WriteLine($"{settings.GetSubscriberName()}: trying to connect to {settings.ConnectionString} ({_exchangeQueueName})");
 
             var cn = $"[Sub] {PlatformServices.Default.Application.ApplicationName} {PlatformServices.Default.Application.ApplicationVersion} to {_exchangeQueueName}";
             using (var connection = factory.CreateConnection(cn))
             using (var channel = connection.CreateModel())
             {
-                _console?.WriteLine($"{_settings.GetSubscriberName()}:  connected to {_settings.ConnectionString} ({_exchangeQueueName})");
+                _console?.WriteLine($"{settings.GetSubscriberName()}:  connected to {settings.ConnectionString} ({_exchangeQueueName})");
 
-                var queueName = _messageReadStrategy.Configure(_settings, channel);
+                var queueName = _messageReadStrategy.Configure(settings, channel);
 
                 var consumer = new QueueingBasicConsumer(channel);
                 var tag = channel.BasicConsume(queueName, false, consumer);
@@ -184,7 +201,7 @@ namespace Lykke.RabbitMqBroker.Subscriber
                 {
                     if (!connection.IsOpen)
                     {
-                        throw new RabbitMqBrokerException($"{_settings.GetSubscriberName()}: connection to {connection.Endpoint.ToString()} is closed");
+                        throw new RabbitMqBrokerException($"{settings.GetSubscriberName()}: connection to {connection.Endpoint.ToString()} is closed");
                     }
 
                     var delivered = consumer.Queue.Dequeue(2000, out var eventArgs);
@@ -210,6 +227,17 @@ namespace Lykke.RabbitMqBroker.Subscriber
             try
             {
                 var body = basicDeliverEventArgs.Body;
+                
+                if (_enableMessageDeduplication)
+                {
+                    var isDuplicated = !_deduplicator.EnsureNotDuplicateAsync(body).Result;
+                    if (isDuplicated)
+                    {
+                        ma.Accept();
+                        return;
+                    }
+                }
+
                 var model = _messageDeserializer.Deserialize(body);
 
                 if (_submitTelemetry)
@@ -245,7 +273,7 @@ namespace Lykke.RabbitMqBroker.Subscriber
             catch (Exception ex)
             {
                 _console?.WriteLine("Failed to process the message");
-                _log.WriteErrorAsync(GetType().Name, nameof(MessageReceived), "Failed to process the message", ex).GetAwaiter().GetResult();                
+                _log.WriteErrorAsync(GetType().Name, nameof(MessageReceived), "Failed to process the message", ex).GetAwaiter().GetResult();
 
                 ma.Reject();
             }
@@ -270,6 +298,7 @@ namespace Lykke.RabbitMqBroker.Subscriber
         {
             if (_messageDeserializer == null)
             {
+
                 throw new InvalidOperationException("Please, specify message deserializer");
             }
             if (_eventHandler == null && _cancallableEventHandler == null)
@@ -294,7 +323,21 @@ namespace Lykke.RabbitMqBroker.Subscriber
             _reconnectionsInARowCount = 0;
 
             _thread = new Thread(ReadThread);
-            _thread.Start();
+            _thread.Start(_settings);
+
+            //_alternateThread
+            if (_useAlternativeExchange)
+            {
+                if (_alternateThread != null) return this;
+
+                // deep clone
+                var settings = JsonConvert.DeserializeObject<RabbitMqSubscriptionSettings>(JsonConvert.SerializeObject(_settings));
+                // start a new thread with will use 'AlternativeConnectionString'
+                settings.ConnectionString = settings.AlternativeConnectionString;
+                _alternateThread = new Thread(ReadThread);
+                _alternateThread.Start(settings);
+            }
+
             return this;
         }
 
@@ -312,9 +355,25 @@ namespace Lykke.RabbitMqBroker.Subscriber
 
             _thread = null;
 
+            Thread alternateThread = null;
+            if (_useAlternativeExchange)
+            {
+                alternateThread = _alternateThread;
+
+                if (alternateThread == null)
+                    return;
+
+                _alternateThread = null;
+            }
+
             _cancellationTokenSource?.Cancel();
 
             thread.Join();
+
+            if (_useAlternativeExchange)
+            {
+                alternateThread?.Join();
+            }
 
             _cancellationTokenSource?.Dispose();
         }
@@ -324,14 +383,14 @@ namespace Lykke.RabbitMqBroker.Subscriber
             Dispose(true);
             GC.SuppressFinalize(this);
         }
-        
+
         protected virtual void Dispose(bool disposing)
         {
             if (_disposed || !disposing)
-                return; 
-            
+                return;
+
             ((IStopable)this).Stop();
-            
+
             _disposed = true;
         }
 
