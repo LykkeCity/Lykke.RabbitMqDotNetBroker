@@ -9,6 +9,7 @@ namespace Lykke.RabbitMqBroker.Subscriber
     [PublicAPI]
     public class ProtobufMessageDeserializer<TMessage> : IMessageDeserializer<TMessage>
     {
+        /// <inheritdoc />
         public TMessage Deserialize(byte[] data)
         {
             using (var stream = new MemoryStream(data))

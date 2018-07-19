@@ -78,7 +78,7 @@ namespace Lykke.RabbitMqBroker.Subscriber
 
             _useAlternativeExchange = !string.IsNullOrWhiteSpace(_settings.AlternativeConnectionString);
             _enableMessageDeduplication = _useAlternativeExchange;
-            if(_enableMessageDeduplication)
+            if (_enableMessageDeduplication)
                 _deduplicator = new InMemoryDeduplcator();
         }
 
@@ -144,7 +144,7 @@ namespace Lykke.RabbitMqBroker.Subscriber
 
         private async void ReadThread(object parameter)
         {
-            var settings = (RabbitMqSubscriptionSettings) parameter;
+            var settings = (RabbitMqSubscriptionSettings)parameter;
             while (!IsStopped())
             {
                 try
@@ -227,7 +227,7 @@ namespace Lykke.RabbitMqBroker.Subscriber
             try
             {
                 var body = basicDeliverEventArgs.Body;
-                
+
                 if (_enableMessageDeduplication)
                 {
                     var isDuplicated = !_deduplicator.EnsureNotDuplicateAsync(body).Result;
@@ -325,14 +325,13 @@ namespace Lykke.RabbitMqBroker.Subscriber
             _thread = new Thread(ReadThread);
             _thread.Start(_settings);
 
-            //_alternateThread
             if (_useAlternativeExchange)
             {
                 if (_alternateThread != null) return this;
 
                 // deep clone
                 var settings = JsonConvert.DeserializeObject<RabbitMqSubscriptionSettings>(JsonConvert.SerializeObject(_settings));
-                // start a new thread with will use 'AlternativeConnectionString'
+                // start a new thread which will use 'AlternativeConnectionString'
                 settings.ConnectionString = settings.AlternativeConnectionString;
                 _alternateThread = new Thread(ReadThread);
                 _alternateThread.Start(settings);

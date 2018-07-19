@@ -9,6 +9,7 @@ namespace Lykke.RabbitMqBroker.Publisher
     [PublicAPI]
     public class ProtobufMessageSerializer<TMessage> : IRabbitMqSerializer<TMessage>
     {
+        /// <inheritdoc />
         public byte[] Serialize(TMessage model)
         {
             using (var stream = new MemoryStream())
