@@ -46,7 +46,8 @@ namespace Lykke.RabbitMqBroker.Subscriber
         public RabbitMqSubscriber(
             RabbitMqSubscriptionSettings settings,
             IErrorHandlingStrategy errorHandlingStrategy,
-            bool submitTelemetry = true)
+            bool submitTelemetry = true,
+            IDeduplicator deduplicator = null)
         {
             _settings = settings;
             _errorHandlingStrategy = errorHandlingStrategy;
@@ -56,14 +57,15 @@ namespace Lykke.RabbitMqBroker.Subscriber
             _useAlternativeExchange = !string.IsNullOrWhiteSpace(_settings.AlternativeConnectionString);
             _enableMessageDeduplication = _useAlternativeExchange;
             if (_enableMessageDeduplication)
-                _deduplicator = new InMemoryDeduplcator();
+                _deduplicator = deduplicator ?? new InMemoryDeduplcator();
         }
 
         public RabbitMqSubscriber(
             [NotNull] ILogFactory logFactory,
             [NotNull] RabbitMqSubscriptionSettings settings,
             [NotNull] IErrorHandlingStrategy errorHandlingStrategy,
-            bool submitTelemetry = true)
+            bool submitTelemetry = true,
+            IDeduplicator deduplicator = null)
         {
             if (logFactory == null)
             {
@@ -79,7 +81,7 @@ namespace Lykke.RabbitMqBroker.Subscriber
             _useAlternativeExchange = !string.IsNullOrWhiteSpace(_settings.AlternativeConnectionString);
             _enableMessageDeduplication = _useAlternativeExchange;
             if (_enableMessageDeduplication)
-                _deduplicator = new InMemoryDeduplcator();
+                _deduplicator = deduplicator ?? new InMemoryDeduplcator();
         }
 
         #region Configurator
@@ -230,7 +232,7 @@ namespace Lykke.RabbitMqBroker.Subscriber
 
                 if (_enableMessageDeduplication)
                 {
-                    var isDuplicated = !_deduplicator.EnsureNotDuplicateAsync(body).Result;
+                    var isDuplicated = !_deduplicator.EnsureNotDuplicateAsync(body).GetAwaiter().GetResult();
                     if (isDuplicated)
                     {
                         ma.Accept();
