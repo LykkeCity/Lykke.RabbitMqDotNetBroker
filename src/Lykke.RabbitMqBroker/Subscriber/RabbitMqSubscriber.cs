@@ -358,10 +358,6 @@ namespace Lykke.RabbitMqBroker.Subscriber
             if (_useAlternativeExchange)
             {
                 alternateThread = _alternateThread;
-
-                if (alternateThread == null)
-                    return;
-
                 _alternateThread = null;
             }
 
