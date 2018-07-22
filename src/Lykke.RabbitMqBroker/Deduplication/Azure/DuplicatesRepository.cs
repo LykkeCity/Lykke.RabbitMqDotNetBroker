@@ -21,7 +21,7 @@ namespace Lykke.RabbitMqBroker.Deduplication.Azure
         public Task<bool> DuplicateExistsAsync(byte[] value)
         {
             var entity = DuplicateEntity.Create(value);
-            return _tableStorage.RecordExistsAsync(entity);
+            return _tableStorage.CreateIfNotExistsAsync(entity);
         }
     }
 }

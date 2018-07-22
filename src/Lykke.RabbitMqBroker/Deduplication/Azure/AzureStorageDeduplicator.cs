@@ -18,21 +18,7 @@ namespace Lykke.RabbitMqBroker.Deduplication.Azure
         
         public async Task<bool> EnsureNotDuplicateAsync(byte[] value)
         {
-            await _lock.WaitAsync();
-            
-            try
-            {
-                if (await _repository.DuplicateExistsAsync(value))
-                    return false;
-                
-                await _repository.AddAsync(value);
-            }
-            finally
-            {
-                _lock.Release();
-            }
-
-            return true;
+            return await _repository.DuplicateExistsAsync(value);
         }
     }
 }
