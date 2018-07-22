@@ -9,7 +9,6 @@ namespace Lykke.RabbitMqBroker.Deduplication.Azure
     public class AzureStorageDeduplicator : IDeduplicator
     {
         private DuplicatesRepository _repository;
-        private readonly SemaphoreSlim _lock = new SemaphoreSlim(1);
 
         public AzureStorageDeduplicator(INoSQLTableStorage<DuplicateEntity> tableStorage)
         {
