@@ -12,13 +12,7 @@ namespace Lykke.RabbitMqBroker.Deduplication.Azure
             _tableStorage = tableStorage;
         }
 
-        public Task AddAsync(byte[] value)
-        {
-            var entity = DuplicateEntity.Create(value);
-            return _tableStorage.InsertOrMergeAsync(entity);
-        }
-        
-        public Task<bool> DuplicateExistsAsync(byte[] value)
+        public Task<bool> EnsureNotDuplicateAsync(byte[] value)
         {
             var entity = DuplicateEntity.Create(value);
             return _tableStorage.CreateIfNotExistsAsync(entity);
