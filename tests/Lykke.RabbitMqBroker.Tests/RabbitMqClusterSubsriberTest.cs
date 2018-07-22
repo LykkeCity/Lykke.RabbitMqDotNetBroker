@@ -36,7 +36,6 @@ namespace Lykke.RabbitMqBroker.Tests
             var settings = new RabbitMqSubscriptionSettings
             {
                 ConnectionString = ConnectionString,
-                AlternativeConnectionString = AlternativeConnectionString,
                 ExchangeName = ExchangeName,
                 IsDurable = true,
                 QueueName = QueueName
@@ -47,6 +46,8 @@ namespace Lykke.RabbitMqBroker.Tests
                     new DefaultErrorHandlingStrategy(EmptyLogFactory.Instance, settings))
                 .SetMessageDeserializer(new DefaultStringDeserializer())
                 .SetMessageReadStrategy(new MessageReadQueueStrategy())
+                .SetAlternativeExchange(AlternativeConnectionString)
+                .SetInMemoryDeduplicator()
                 .CreateDefaultBinding();
 
             var handler = new Func<string, Task>(s =>
@@ -92,7 +93,6 @@ namespace Lykke.RabbitMqBroker.Tests
             var settings = new RabbitMqSubscriptionSettings
             {
                 ConnectionString = InvalidConnectionString,
-                AlternativeConnectionString = AlternativeConnectionString,
                 ExchangeName = ExchangeName,
                 IsDurable = true,
                 QueueName = QueueName
@@ -103,6 +103,8 @@ namespace Lykke.RabbitMqBroker.Tests
                     new DefaultErrorHandlingStrategy(EmptyLogFactory.Instance, settings))
                 .SetMessageDeserializer(new DefaultStringDeserializer())
                 .SetMessageReadStrategy(new MessageReadQueueStrategy())
+                .SetAlternativeExchange(AlternativeConnectionString)
+                .SetInMemoryDeduplicator()
                 .CreateDefaultBinding();
 
             var handler = new Func<string, Task>(s =>

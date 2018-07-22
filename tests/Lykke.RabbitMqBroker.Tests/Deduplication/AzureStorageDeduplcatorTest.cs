@@ -1,12 +1,13 @@
-﻿using Lykke.RabbitMqBroker.Deduplication;
+﻿using AzureStorage.Tables;
+using Lykke.RabbitMqBroker.Deduplication.Azure;
 using NUnit.Framework;
 
 namespace Lykke.RabbitMqBroker.Tests.Deduplication
 {
     [TestFixture]
-    public class InMemoryDeduplcatorTest
+    public class AzureStorageDeduplcatorTest
     {
-        private readonly InMemoryDeduplcator _deduplcator = new InMemoryDeduplcator();
+        private readonly AzureStorageDeduplicator _deduplcator = new AzureStorageDeduplicator(new NoSqlTableInMemory<DuplicateEntity>());
 
         [SetUp]
         public void SetUp()
@@ -24,6 +25,5 @@ namespace Lykke.RabbitMqBroker.Tests.Deduplication
             notDuplicate = _deduplcator.EnsureNotDuplicateAsync(value).Result;
             Assert.False(notDuplicate);
         }
-        
     }
 }

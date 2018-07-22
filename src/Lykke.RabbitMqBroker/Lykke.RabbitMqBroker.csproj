@@ -1,5 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
-
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <AssemblyName>Lykke.RabbitMqBroker</AssemblyName>
@@ -20,32 +19,29 @@
     <FileVersion>1.0.0.1</FileVersion>
     <GeneratePackageOnBuild>False</GeneratePackageOnBuild>
   </PropertyGroup>
-
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <DocumentationFile>bin\Debug\netstandard2.0\Lykke.RabbitMqBroker.xml</DocumentationFile>
     <NoWarn>1701;1702;1705;1591</NoWarn>
   </PropertyGroup>
-
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
     <DocumentationFile>bin\Release\netstandard2.0\Lykke.RabbitMqBroker.xml</DocumentationFile>
     <NoWarn>1701;1702;1705;1591</NoWarn>
   </PropertyGroup>
-
   <ItemGroup>
     <PackageReference Include="JetBrains.Annotations" Version="11.1.0" />
+    <PackageReference Include="Lykke.AzureStorage" Version="8.10.0" />
     <PackageReference Include="Lykke.Common" Version="7.0.1" />
+    <PackageReference Include="Lykke.SettingsReader" Version="2.4.1" />
     <PackageReference Include="MessagePack" Version="1.7.3.4" />
     <PackageReference Include="Microsoft.ApplicationInsights" Version="2.6.4" />
     <PackageReference Include="protobuf-net" Version="2.3.13" />
     <PackageReference Include="RabbitMQ.Client" Version="4.1.1" />
     <PackageReference Include="SourceLink.Create.CommandLine" Version="2.5.0" PrivateAssets="All" />
   </ItemGroup>
-
   <ItemGroup Label="dotnet pack instructions">
     <Content Include="$(OutputPath)Lykke.RabbitMqBroker.pdb">
       <Pack>true</Pack>
       <PackagePath>lib/netstandard2.0</PackagePath>
     </Content>
   </ItemGroup>
-  
 </Project>

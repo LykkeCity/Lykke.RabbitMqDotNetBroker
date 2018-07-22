@@ -6,15 +6,12 @@ using Microsoft.Extensions.Caching.Memory;
 
 namespace Lykke.RabbitMqBroker.Deduplication
 {
-    /// <summary>
-    /// Checks if the passed value was already received some time ago.
-    /// In-memory implementation.
-    /// </summary>
+    /// <inheritdoc/>
+    /// <remarks>In-memory implementation.</remarks>
     [PublicAPI]
     public class InMemoryDeduplcator : IDeduplicator
     {
         private static readonly IMemoryCache Cache = new MemoryCache(new MemoryCacheOptions());
-        private static readonly System.Security.Cryptography.MD5 HashAlgorithm = System.Security.Cryptography.MD5.Create();
         private readonly TimeSpan _expiration;
 
         /// <summary>
@@ -26,12 +23,9 @@ namespace Lykke.RabbitMqBroker.Deduplication
             _expiration = expiration ?? TimeSpan.FromDays(1);
         }
 
-        /// <summary>
-        /// Check if the passed value was already received some time ago.
-        /// </summary>
         public Task<bool> EnsureNotDuplicateAsync(byte[] value)
         {
-            var hash = Encoding.UTF8.GetString(HashAlgorithm.ComputeHash(value));
+            var hash = HashHelper.GetMd5Hash(value);
 
             lock (Cache)
             {
@@ -39,6 +33,7 @@ namespace Lykke.RabbitMqBroker.Deduplication
                     return Task.FromResult(false);
                 Cache.Set(hash, true, _expiration);
             }
+            
             return Task.FromResult(true);
         }
     }

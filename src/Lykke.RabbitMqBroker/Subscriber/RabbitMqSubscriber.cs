@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Text;
 using System.Threading.Tasks;
 using System.Threading;
 using Microsoft.Extensions.PlatformAbstractions;
@@ -6,6 +7,7 @@ using Microsoft.ApplicationInsights;
 using Microsoft.ApplicationInsights.DataContracts;
 using Microsoft.ApplicationInsights.Extensibility;
 using Autofac;
+using AzureStorage.Tables;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using Common;
@@ -13,6 +15,8 @@ using Common.Log;
 using JetBrains.Annotations;
 using Lykke.Common.Log;
 using Lykke.RabbitMqBroker.Deduplication;
+using Lykke.RabbitMqBroker.Deduplication.Azure;
+using Lykke.SettingsReader.ReloadingManager;
 using Newtonsoft.Json;
 
 namespace Lykke.RabbitMqBroker.Subscriber
@@ -29,9 +33,11 @@ namespace Lykke.RabbitMqBroker.Subscriber
         private readonly TelemetryClient _telemetry = new TelemetryClient();
         private readonly string _exchangeQueueName;
         private readonly string _typeName = typeof(TTopicModel).Name;
-        private readonly bool _useAlternativeExchange;
-        private readonly bool _enableMessageDeduplication;
-        private readonly IDeduplicator _deduplicator;
+        private bool _enableMessageDeduplication;
+        private bool _useAlternativeExchange;
+        private string _alternativeExchangeConnString;
+        private IDeduplicator _deduplicator;
+        private string _deduplicatorHeader;
         private ILog _log;
         private Thread _thread;
         private Thread _alternateThread;
@@ -46,18 +52,12 @@ namespace Lykke.RabbitMqBroker.Subscriber
         public RabbitMqSubscriber(
             RabbitMqSubscriptionSettings settings,
             IErrorHandlingStrategy errorHandlingStrategy,
-            bool submitTelemetry = true,
-            IDeduplicator deduplicator = null)
+            bool submitTelemetry = true)
         {
             _settings = settings;
             _errorHandlingStrategy = errorHandlingStrategy;
             _submitTelemetry = submitTelemetry;
             _exchangeQueueName = _settings.GetQueueOrExchangeName();
-
-            _useAlternativeExchange = !string.IsNullOrWhiteSpace(_settings.AlternativeConnectionString);
-            _enableMessageDeduplication = _useAlternativeExchange;
-            if (_enableMessageDeduplication)
-                _deduplicator = deduplicator ?? new InMemoryDeduplcator();
         }
 
         public RabbitMqSubscriber(
@@ -77,11 +77,6 @@ namespace Lykke.RabbitMqBroker.Subscriber
             _errorHandlingStrategy = errorHandlingStrategy ?? throw new ArgumentNullException(nameof(errorHandlingStrategy));
             _submitTelemetry = submitTelemetry;
             _exchangeQueueName = _settings.GetQueueOrExchangeName();
-
-            _useAlternativeExchange = !string.IsNullOrWhiteSpace(_settings.AlternativeConnectionString);
-            _enableMessageDeduplication = _useAlternativeExchange;
-            if (_enableMessageDeduplication)
-                _deduplicator = deduplicator ?? new InMemoryDeduplcator();
         }
 
         #region Configurator
@@ -129,6 +124,36 @@ namespace Lykke.RabbitMqBroker.Subscriber
         public RabbitMqSubscriber<TTopicModel> CreateDefaultBinding()
         {
             SetMessageReadStrategy(new MessageReadWithTemporaryQueueStrategy());
+            return this;
+        }
+
+        public RabbitMqSubscriber<TTopicModel> SetAlternativeExchange(string connString)
+        {
+            if (!string.IsNullOrWhiteSpace(connString))
+            {
+                _alternativeExchangeConnString = connString;
+                _useAlternativeExchange = true;
+            }
+
+            return this;
+        }
+
+        public RabbitMqSubscriber<TTopicModel> SetInMemoryDeduplicator(TimeSpan? expiration = null)
+        {
+            _deduplicator = new InMemoryDeduplcator(expiration);
+            return this;
+        }
+        
+        public RabbitMqSubscriber<TTopicModel> SetAzureStorageDeduplicator(string connString, string tableName, ILogFactory log)
+        {
+            _deduplicator = new AzureStorageDeduplicator(AzureTableStorage<DuplicateEntity>.Create(
+                ConstantReloadingManager.From(connString), tableName, log));
+            return this;
+        }
+        
+        public RabbitMqSubscriber<TTopicModel> SetHeaderDeduplication(string headerName)
+        {
+            _deduplicatorHeader = headerName;
             return this;
         }
 
@@ -232,7 +257,13 @@ namespace Lykke.RabbitMqBroker.Subscriber
 
                 if (_enableMessageDeduplication)
                 {
-                    var isDuplicated = !_deduplicator.EnsureNotDuplicateAsync(body).GetAwaiter().GetResult();
+                    var isDuplicated = string.IsNullOrEmpty(_deduplicatorHeader)
+                        ? !_deduplicator.EnsureNotDuplicateAsync(body).GetAwaiter().GetResult()
+                        : basicDeliverEventArgs.BasicProperties.Headers.ContainsKey(_deduplicatorHeader) &&
+                          _deduplicator.EnsureNotDuplicateAsync(
+                              Encoding.UTF8.GetBytes(basicDeliverEventArgs.BasicProperties.Headers[_deduplicatorHeader]
+                                  .ToJson())).GetAwaiter().GetResult();
+                        
                     if (isDuplicated)
                     {
                         ma.Accept();
@@ -300,16 +331,22 @@ namespace Lykke.RabbitMqBroker.Subscriber
         {
             if (_messageDeserializer == null)
             {
-
                 throw new InvalidOperationException("Please, specify message deserializer");
             }
+            
             if (_eventHandler == null && _cancallableEventHandler == null)
             {
                 throw new InvalidOperationException("Please, specify message handler");
             }
+            
             if (_log == null)
             {
                 throw new InvalidOperationException("Please, specify log");
+            }
+            
+            if (_deduplicator == null && _useAlternativeExchange)
+            {
+                throw new InvalidOperationException("Please, specify deduplicator");
             }
 
             if (_cancellationTokenSource == null || _cancellationTokenSource.IsCancellationRequested)
@@ -319,7 +356,9 @@ namespace Lykke.RabbitMqBroker.Subscriber
 
             if (_messageReadStrategy == null)
                 CreateDefaultBinding();
-
+            
+            _enableMessageDeduplication = _useAlternativeExchange;
+                
             if (_thread != null) return this;
 
             _reconnectionsInARowCount = 0;
@@ -334,7 +373,7 @@ namespace Lykke.RabbitMqBroker.Subscriber
                 // deep clone
                 var settings = JsonConvert.DeserializeObject<RabbitMqSubscriptionSettings>(JsonConvert.SerializeObject(_settings));
                 // start a new thread which will use 'AlternativeConnectionString'
-                settings.ConnectionString = settings.AlternativeConnectionString;
+                settings.ConnectionString = _alternativeExchangeConnString;
                 _alternateThread = new Thread(ReadThread);
                 _alternateThread.Start(settings);
             }
