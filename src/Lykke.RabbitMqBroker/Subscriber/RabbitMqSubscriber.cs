@@ -16,7 +16,9 @@ using JetBrains.Annotations;
 using Lykke.Common.Log;
 using Lykke.RabbitMqBroker.Deduplication;
 using Lykke.RabbitMqBroker.Deduplication.Azure;
+using Lykke.RabbitMqBroker.Deduplication.Mongo;
 using Lykke.SettingsReader.ReloadingManager;
+using MongoDB.Driver;
 using Newtonsoft.Json;
 
 namespace Lykke.RabbitMqBroker.Subscriber
@@ -151,6 +153,12 @@ namespace Lykke.RabbitMqBroker.Subscriber
             return this;
         }
         
+        public RabbitMqSubscriber<TTopicModel> SetMongoDbStorageDeduplicator(string connString, string tableName, ILogFactory log)
+        {
+            _deduplicator = new MongoStorageDeduplicator(new MongoClient(connString), tableName);
+            return this;
+        }
+        
         public RabbitMqSubscriber<TTopicModel> SetHeaderDeduplication(string headerName)
         {
             _deduplicatorHeader = headerName;
@@ -254,15 +262,16 @@ namespace Lykke.RabbitMqBroker.Subscriber
             try
             {
                 var body = basicDeliverEventArgs.Body;
+                var header = string.IsNullOrEmpty(_deduplicatorHeader) ||
+                             !basicDeliverEventArgs.BasicProperties.Headers.ContainsKey(_deduplicatorHeader)
+                    ? Array.Empty<byte>()
+                    : Encoding.UTF8.GetBytes(basicDeliverEventArgs.BasicProperties.Headers[_deduplicatorHeader].ToJson());
 
                 if (_enableMessageDeduplication)
                 {
-                    var isDuplicated = string.IsNullOrEmpty(_deduplicatorHeader)
+                    var isDuplicated = header.Length == 0
                         ? !_deduplicator.EnsureNotDuplicateAsync(body).GetAwaiter().GetResult()
-                        : basicDeliverEventArgs.BasicProperties.Headers.ContainsKey(_deduplicatorHeader) &&
-                          _deduplicator.EnsureNotDuplicateAsync(
-                              Encoding.UTF8.GetBytes(basicDeliverEventArgs.BasicProperties.Headers[_deduplicatorHeader]
-                                  .ToJson())).GetAwaiter().GetResult();
+                        : !_deduplicator.EnsureNotDuplicateAsync(header).GetAwaiter().GetResult();
                         
                     if (isDuplicated)
                     {
