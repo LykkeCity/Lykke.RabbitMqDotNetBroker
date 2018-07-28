@@ -12,7 +12,7 @@ namespace Lykke.RabbitMqBroker.Deduplication.Mongo
 
         public MongoStorageDeduplicator(IMongoClient mongoClient, string tableName)
         {
-            _repository = new MongoDuplicatesRepository(mongoClient, tableName, DbName);
+            _repository = new MongoDuplicatesRepository(mongoClient, DbName, tableName);
         }
         
         public Task<bool> EnsureNotDuplicateAsync(byte[] value)

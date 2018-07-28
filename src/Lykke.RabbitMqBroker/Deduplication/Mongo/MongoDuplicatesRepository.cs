@@ -1,16 +1,16 @@
 ﻿using System.Threading.Tasks;
+using MongoDB.Bson;
 using MongoDB.Driver;
 
 namespace Lykke.RabbitMqBroker.Deduplication.Mongo
 {
     public class MongoDuplicatesRepository
     {
-        private readonly IMongoCollection<MongoDuplicateEntity> _collection;
+        private IMongoCollection<MongoDuplicateEntity> _collection;
 
-        public MongoDuplicatesRepository(IMongoClient mongoClient, string tableName, string dbName = "maindb")
+        public MongoDuplicatesRepository(IMongoClient mongoClient, string dbName, string collectionName)
         {
-            var db = mongoClient.GetDatabase(dbName);
-            _collection = db.GetCollection<MongoDuplicateEntity>(tableName);
+            ConfigureShard(mongoClient, dbName, collectionName);
         }
         
         public async Task<bool> EnsureNotDuplicateAsync(byte[] value)
@@ -28,6 +28,42 @@ namespace Lykke.RabbitMqBroker.Deduplication.Mongo
 
                 throw;
             }
+        }
+
+        private void ConfigureShard(IMongoClient dbClient, string dbName, string collectionName)
+        {
+            IMongoDatabase admin = dbClient.GetDatabase("admin");
+            IMongoDatabase db = dbClient.GetDatabase(dbName);
+            
+            admin.RunCommand(new BsonDocumentCommand<BsonDocument>(new BsonDocument("enableSharding", dbName)));
+
+            bool collectionExists = CollectionExists(db, collectionName);
+
+            if (!collectionExists)
+            {
+                //Create collection with sharding
+                admin.RunCommand(new BsonDocumentCommand<BsonDocument>(new BsonDocument
+                {
+                    {"shardCollection", $"{dbName}.{collectionName}"},
+                    {"key", new BsonDocument{{"_id", "hashed"}}}
+                }));
+            }
+            
+            _collection = db.GetCollection<MongoDuplicateEntity>(collectionName);
+            
+            if (!collectionExists)
+            {
+                //Creating Hashed index to spread documents evenly across shards
+                _collection.Indexes.CreateOne(new CreateIndexModel<MongoDuplicateEntity>(
+                    Builders<MongoDuplicateEntity>.IndexKeys.Ascending(x => x.BsonId)));
+            }
+        }
+        
+        private bool CollectionExists(IMongoDatabase db, string collectionName)
+        {
+            var filter = new BsonDocument("name", collectionName);
+            var collections = db.ListCollections(new ListCollectionsOptions { Filter = filter });
+            return collections.Any();
         }
     }
 }
