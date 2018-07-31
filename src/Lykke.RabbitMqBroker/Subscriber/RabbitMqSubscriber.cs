@@ -7,7 +7,6 @@ using Microsoft.ApplicationInsights;
 using Microsoft.ApplicationInsights.DataContracts;
 using Microsoft.ApplicationInsights.Extensibility;
 using Autofac;
-using AzureStorage.Tables;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using Common;
@@ -15,10 +14,6 @@ using Common.Log;
 using JetBrains.Annotations;
 using Lykke.Common.Log;
 using Lykke.RabbitMqBroker.Deduplication;
-using Lykke.RabbitMqBroker.Deduplication.Azure;
-using Lykke.RabbitMqBroker.Deduplication.Mongo;
-using Lykke.SettingsReader.ReloadingManager;
-using MongoDB.Driver;
 using Newtonsoft.Json;
 
 namespace Lykke.RabbitMqBroker.Subscriber
@@ -140,22 +135,9 @@ namespace Lykke.RabbitMqBroker.Subscriber
             return this;
         }
 
-        public RabbitMqSubscriber<TTopicModel> SetInMemoryDeduplicator(TimeSpan? expiration = null)
+        public RabbitMqSubscriber<TTopicModel> SetDeduplicator(IDeduplicator deduplicator)
         {
-            _deduplicator = new InMemoryDeduplcator(expiration);
-            return this;
-        }
-        
-        public RabbitMqSubscriber<TTopicModel> SetAzureStorageDeduplicator(string connString, string tableName, ILogFactory log)
-        {
-            _deduplicator = new AzureStorageDeduplicator(AzureTableStorage<DuplicateEntity>.Create(
-                ConstantReloadingManager.From(connString), tableName, log));
-            return this;
-        }
-        
-        public RabbitMqSubscriber<TTopicModel> SetMongoDbStorageDeduplicator(string connString, string tableName, ILogFactory log)
-        {
-            _deduplicator = new MongoStorageDeduplicator(new MongoClient(connString), tableName);
+            _deduplicator = deduplicator;
             return this;
         }
         

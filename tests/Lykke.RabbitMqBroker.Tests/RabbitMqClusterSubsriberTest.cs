@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Common;
 using Lykke.Logs;
+using Lykke.RabbitMqBroker.Deduplication;
 using Lykke.RabbitMqBroker.Subscriber;
 using NUnit.Framework;
 using RabbitMQ.Client;
@@ -47,7 +48,7 @@ namespace Lykke.RabbitMqBroker.Tests
                 .SetMessageDeserializer(new DefaultStringDeserializer())
                 .SetMessageReadStrategy(new MessageReadQueueStrategy())
                 .SetAlternativeExchange(AlternativeConnectionString)
-                .SetInMemoryDeduplicator()
+                .SetDeduplicator(new InMemoryDeduplcator())
                 .CreateDefaultBinding();
 
             var handler = new Func<string, Task>(s =>
@@ -104,7 +105,7 @@ namespace Lykke.RabbitMqBroker.Tests
                 .SetMessageDeserializer(new DefaultStringDeserializer())
                 .SetMessageReadStrategy(new MessageReadQueueStrategy())
                 .SetAlternativeExchange(AlternativeConnectionString)
-                .SetInMemoryDeduplicator()
+                .SetDeduplicator(new InMemoryDeduplcator())
                 .CreateDefaultBinding();
 
             var handler = new Func<string, Task>(s =>
