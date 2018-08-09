@@ -205,7 +205,7 @@ namespace Lykke.RabbitMqBroker.Subscriber
             using (var connection = factory.CreateConnection(cn))
             using (var channel = connection.CreateModel())
             {
-                _console?.WriteLine($"{settings.GetSubscriberName()}:  connected to {settings.ConnectionString} ({_exchangeQueueName})");
+                _console?.WriteLine($"{settings.GetSubscriberName()}: connected to {settings.ConnectionString} ({_exchangeQueueName})");
 
                 var queueName = _messageReadStrategy.Configure(settings, channel);
 
@@ -218,7 +218,7 @@ namespace Lykke.RabbitMqBroker.Subscriber
                 {
                     if (!connection.IsOpen)
                     {
-                        throw new RabbitMqBrokerException($"{settings.GetSubscriberName()}: connection to {connection.Endpoint.ToString()} is closed");
+                        throw new RabbitMqBrokerException($"{settings.GetSubscriberName()}: connection to {connection.Endpoint} is closed");
                     }
 
                     var delivered = consumer.Queue.Dequeue(2000, out var eventArgs);

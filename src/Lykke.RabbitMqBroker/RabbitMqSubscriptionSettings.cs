@@ -1,8 +1,10 @@
-﻿using System;
+﻿using JetBrains.Annotations;
+using System;
 
 namespace Lykke.RabbitMqBroker.Subscriber
 {
     // TODO: Hide setters, when next breaking changes release will be required
+    [PublicAPI]
     public sealed class RabbitMqSubscriptionSettings
     {
         public string ConnectionString { get; set; }
