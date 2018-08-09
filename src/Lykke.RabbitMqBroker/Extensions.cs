@@ -11,7 +11,7 @@ namespace Lykke.RabbitMqBroker
 
         internal static string GetSubscriberName(this RabbitMqSubscriptionSettings settings)
         {
-            return $"Subscriber {settings.QueueName}";
+            return $"Subscriber {settings.QueueName}{(!string.IsNullOrWhiteSpace(settings.RoutingKey) ? $"/{settings.RoutingKey}" : string.Empty)}";
         }
 
         internal static string GetQueueOrExchangeName(this RabbitMqSubscriptionSettings settings)
