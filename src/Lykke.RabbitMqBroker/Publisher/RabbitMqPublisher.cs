@@ -32,7 +32,6 @@ namespace Lykke.RabbitMqBroker.Publisher
         private IRabbitMqSerializer<TMessageModel> _serializer;
         private IRabbitMqPublishStrategy _publishStrategy;
         private ILog _log;
-        private IConsole _console;
         private RabbitMqPublisherQueueMonitor<TMessageModel> _queueMonitor;
         private DeferredMessagesManager _deferredMessagesManager;
         private bool _publishSynchronously;
@@ -125,14 +124,9 @@ namespace Lykke.RabbitMqBroker.Publisher
 
             _queueMonitor?.Dispose();
 
-            if (_logFactory == null)
-            {
-                _queueMonitor = new RabbitMqPublisherQueueMonitor<TMessageModel>(queueSizeThreshold, monitorPeriod ?? TimeSpan.FromSeconds(60), _log);
-            }
-            else
-            {
-                _queueMonitor = new RabbitMqPublisherQueueMonitor<TMessageModel>(queueSizeThreshold, monitorPeriod ?? TimeSpan.FromSeconds(60), _logFactory);
-            }
+            _queueMonitor = _logFactory == null
+                ? new RabbitMqPublisherQueueMonitor<TMessageModel>(queueSizeThreshold, monitorPeriod ?? TimeSpan.FromSeconds(60), _log)
+                : new RabbitMqPublisherQueueMonitor<TMessageModel>(queueSizeThreshold, monitorPeriod ?? TimeSpan.FromSeconds(60), _logFactory);
 
             return this;
         }
@@ -159,14 +153,9 @@ namespace Lykke.RabbitMqBroker.Publisher
 
             _deferredMessagesManager?.Dispose();
 
-            if (_logFactory == null)
-            {
-                _deferredMessagesManager = new DeferredMessagesManager(repository, deliveryPrecision ?? TimeSpan.FromSeconds(1), _log);
-            }
-            else
-            {
-                _deferredMessagesManager = new DeferredMessagesManager(repository, deliveryPrecision ?? TimeSpan.FromSeconds(1), _logFactory);
-            }
+            _deferredMessagesManager = _logFactory == null
+                ? new DeferredMessagesManager(repository, deliveryPrecision ?? TimeSpan.FromSeconds(1), _log)
+                : new DeferredMessagesManager(repository, deliveryPrecision ?? TimeSpan.FromSeconds(1), _logFactory);
 
             return this;
         }
@@ -208,11 +197,9 @@ namespace Lykke.RabbitMqBroker.Publisher
             return this;
         }
 
+        [Obsolete("Remove this call - now it does nothing")]
         public RabbitMqPublisher<TMessageModel> SetConsole(IConsole console)
         {
-            ThrowIfStarted();
-
-            _console = console;
             return this;
         }
 
@@ -348,7 +335,6 @@ namespace Lykke.RabbitMqBroker.Publisher
                 _rawPublisher = new RawMessagePublisher(
                     Name,
                     _log,
-                    _console,
                     messagesBuffer,
                     _publishStrategy,
                     _settings,
@@ -360,7 +346,6 @@ namespace Lykke.RabbitMqBroker.Publisher
                 _rawPublisher = new RawMessagePublisher(
                     Name,
                     _logFactory,
-                    _console,
                     messagesBuffer,
                     _publishStrategy,
                     _settings,

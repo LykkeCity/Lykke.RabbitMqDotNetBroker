@@ -26,7 +26,6 @@ namespace RabbitMqBrokerTests
             _publisher = new RabbitMqPublisher<string>(EmptyLogFactory.Instance, _settings);
 
             _publisher
-                .SetConsole(_console)
                 .SetPublishStrategy(new DefaultFanoutPublishStrategy(_settings))
                 .DisableInMemoryQueuePersistence()
                 .SetSerializer(new TestMessageSerializer());
@@ -37,7 +36,6 @@ namespace RabbitMqBrokerTests
         {
             ((IStopable)_publisher).Stop();
         }
-
 
         [Test]
         public async Task SuccessfulPath()
@@ -60,7 +58,6 @@ namespace RabbitMqBrokerTests
             var publisher = new RabbitMqPublisher<ComplexType>(EmptyLogFactory.Instance, _settings);
 
             publisher
-                .SetConsole(_console)
                 .SetPublishStrategy(new DefaultFanoutPublishStrategy(_settings))
                 .DisableInMemoryQueuePersistence()
                 .SetSerializer(new JsonMessageSerializer<ComplexType>())
@@ -75,14 +72,12 @@ namespace RabbitMqBrokerTests
             Assert.ThrowsAsync<JsonSerializationException>(() => publisher.ProduceAsync(invalidObj));
         }
 
-
         [Test]
         public void ShouldRethrowPublishingException()
         {
             var bu = new TestBuffer();
             bu.Gate.Set();
             SetupNormalQueue();
-
 
             var pubStrategy = Substitute.For<IRabbitMqPublishStrategy>();
             _publisher.SetBuffer(bu);
@@ -91,7 +86,6 @@ namespace RabbitMqBrokerTests
             _publisher.Start();
 
             pubStrategy.When(m => m.Publish(Arg.Any<RabbitMqSubscriptionSettings>(), Arg.Any<IModel>(), Arg.Any<RawMessage>())).Throw<InvalidOperationException>();
-
 
             Assert.Throws<RabbitMqBrokerException>(() => _publisher.ProduceAsync(string.Empty).Wait());
         }

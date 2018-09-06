@@ -15,7 +15,6 @@ namespace RabbitMqBrokerTests
     [Explicit]
     internal sealed class RabbitMqSubsriberTest : RabbitMqPublisherSubscriberBaseTest
     {
-
         private RabbitMqSubscriber<string> _subscriber;
 
         [SetUp]
@@ -27,7 +26,6 @@ namespace RabbitMqBrokerTests
                     _settings, 
                     new DefaultErrorHandlingStrategy(EmptyLogFactory.Instance, _settings), 
                     submitTelemetry: true)
-                .SetConsole(_console)
                 .CreateDefaultBinding()
                 .SetMessageDeserializer(new DefaultStringDeserializer());
         }
