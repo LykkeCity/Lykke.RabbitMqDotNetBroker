@@ -177,10 +177,6 @@ namespace Lykke.RabbitMqBroker.Subscriber
 
                             _reconnectionsInARowCount = 0;
                         }
-                        else
-                        {
-                            _log.WriteWarning(nameof(ReadThread), settings.GetSubscriberName(), ex.Message);
-                        }
 
                         _reconnectionsInARowCount++;
 

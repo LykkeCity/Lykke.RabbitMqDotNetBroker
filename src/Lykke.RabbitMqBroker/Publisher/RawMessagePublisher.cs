@@ -262,10 +262,6 @@ namespace Lykke.RabbitMqBroker.Publisher
 
                             _reconnectionsInARowCount = 0;
                         }
-                        else
-                        {
-                            _log.WriteWarning(nameof(ConnectionThread), _settings.GetPublisherName(), e.Message);
-                        }
 
                         _reconnectionsInARowCount++;
 
