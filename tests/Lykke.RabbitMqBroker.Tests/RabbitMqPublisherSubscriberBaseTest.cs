@@ -1,11 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Text;
-using Common.Log;
 using Lykke.RabbitMqBroker.Publisher;
 using Lykke.RabbitMqBroker.Subscriber;
-using NSubstitute;
 using NUnit.Framework;
 using RabbitMQ.Client;
 
@@ -20,7 +17,6 @@ namespace RabbitMqBrokerTests
     {
         protected IConnectionFactory _factory;
         protected RabbitMqSubscriptionSettings _settings;
-        protected IConsole _console;
         protected const string RabbitConnectionString = "amqp://[username]:[password]@[URL]:5672/IntegrationTests";
 
         protected const string ExchangeName = "TestExchange";
@@ -40,8 +36,6 @@ namespace RabbitMqBrokerTests
         [SetUp]
         public void SetUpBase()
         {
-            _console = new ConsoleLWriter(Console.Write);
-
             _settings = new RabbitMqSubscriptionSettings
             {
                 ConnectionString = RabbitConnectionString,
@@ -63,14 +57,10 @@ namespace RabbitMqBrokerTests
             {
                 using (var connection = _factory.CreateConnection())
                 {
-
                 }
             }
             catch (Exception e)
             {
-                _console.WriteLine(e.Message);
-
-                _console.WriteLine("The rabbitmq server either not installed or not started");
                 Assert.Inconclusive("The rabbitmq server either not installed or not started");
             }
 

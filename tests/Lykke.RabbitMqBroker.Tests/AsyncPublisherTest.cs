@@ -15,15 +15,12 @@ namespace RabbitMqBrokerTests
         [SetUp]
         public void SetUp()
         {
-
             _publisher = new RabbitMqPublisher<string>(EmptyLogFactory.Instance, _settings);
 
             _publisher
-                .SetConsole(_console)
                 .SetPublishStrategy(new DefaultFanoutPublishStrategy(_settings))
                 .DisableInMemoryQueuePersistence()
                 .SetSerializer(new TestMessageSerializer());
-
         }
 
         [Test]
@@ -91,8 +88,6 @@ namespace RabbitMqBrokerTests
             }
         }
 
-
-
         [Test]
         public async Task ShouldUseDeadLetterExchange()
         {
@@ -116,8 +111,6 @@ namespace RabbitMqBrokerTests
 
             Assert.That(result, Is.EqualTo(expected));
         }
-
-
 
         [TearDown]
         public void TearDown()

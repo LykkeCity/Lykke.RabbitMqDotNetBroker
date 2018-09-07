@@ -40,7 +40,6 @@ namespace Lykke.RabbitMqBroker.Subscriber
         private Thread _alternateThread;
         private IMessageDeserializer<TTopicModel> _messageDeserializer;
         private IMessageReadStrategy _messageReadStrategy;
-        private IConsole _console;
         private int _reconnectionsInARowCount;
         private CancellationTokenSource _cancellationTokenSource;
         private bool _disposed;
@@ -106,9 +105,9 @@ namespace Lykke.RabbitMqBroker.Subscriber
             return this;
         }
 
+        [Obsolete("Remove this call - now it does nothing")]
         public RabbitMqSubscriber<TTopicModel> SetConsole(IConsole console)
         {
-            _console = console;
             return this;
         }
 
@@ -140,7 +139,7 @@ namespace Lykke.RabbitMqBroker.Subscriber
             _deduplicator = deduplicator;
             return this;
         }
-        
+
         public RabbitMqSubscriber<TTopicModel> SetHeaderDeduplication(string headerName)
         {
             _deduplicatorHeader = headerName;
@@ -172,11 +171,9 @@ namespace Lykke.RabbitMqBroker.Subscriber
                     }
                     catch (Exception ex)
                     {
-                        _console?.WriteLine($"{settings.GetSubscriberName()}: ERROR: {ex.Message}");
-
                         if (_reconnectionsInARowCount > settings.ReconnectionsCountToAlarm)
                         {
-                            await _log.WriteFatalErrorAsync(settings.GetSubscriberName(), nameof(ReadThread), new Uri(settings.ConnectionString).Authority, ex);
+                            _log.WriteFatalError(new Uri(settings.ConnectionString).Authority, settings.GetSubscriberName(), ex);
 
                             _reconnectionsInARowCount = 0;
                         }
@@ -193,19 +190,19 @@ namespace Lykke.RabbitMqBroker.Subscriber
                 }
             }
 
-            _console?.WriteLine($"{settings.GetSubscriberName()}: is stopped");
+            _log.WriteInfo(nameof(ReadThread), settings.GetSubscriberName(), "Subscriber is stopped");
         }
 
         private void ConnectAndReadAsync(RabbitMqSubscriptionSettings settings)
         {
             var factory = new ConnectionFactory { Uri = settings.ConnectionString };
-            _console?.WriteLine($"{settings.GetSubscriberName()}: trying to connect to {settings.ConnectionString} ({_exchangeQueueName})");
+            _log.WriteInfo(nameof(ConnectAndReadAsync), settings.GetSubscriberName(), $"Trying to connect to {settings.ConnectionString} ({_exchangeQueueName})");
 
             var cn = $"[Sub] {PlatformServices.Default.Application.ApplicationName} {PlatformServices.Default.Application.ApplicationVersion} to {_exchangeQueueName}";
             using (var connection = factory.CreateConnection(cn))
             using (var channel = connection.CreateModel())
             {
-                _console?.WriteLine($"{settings.GetSubscriberName()}: connected to {settings.ConnectionString} ({_exchangeQueueName})");
+                _log.WriteInfo(nameof(ConnectAndReadAsync), settings.GetSubscriberName(), $"Connected to {settings.ConnectionString} ({_exchangeQueueName})");
 
                 var queueName = _messageReadStrategy.Configure(settings, channel);
 
@@ -296,8 +293,7 @@ namespace Lykke.RabbitMqBroker.Subscriber
             }
             catch (Exception ex)
             {
-                _console?.WriteLine("Failed to process the message");
-                _log.WriteErrorAsync(GetType().Name, nameof(MessageReceived), "Failed to process the message", ex).GetAwaiter().GetResult();
+                _log.WriteError(nameof(MessageReceived), _settings.GetSubscriberName(), ex);
 
                 ma.Reject();
             }
