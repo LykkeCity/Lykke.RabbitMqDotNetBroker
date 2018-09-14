@@ -1,4 +1,7 @@
-﻿using System.Threading.Tasks;
+﻿// Copyright (c) Lykke Corp.
+// Licensed under the MIT License. See the LICENSE file in the project root for more information.
+
+using System.Threading.Tasks;
 using Common;
 using Lykke.Logs;
 using Lykke.RabbitMqBroker.Publisher;
