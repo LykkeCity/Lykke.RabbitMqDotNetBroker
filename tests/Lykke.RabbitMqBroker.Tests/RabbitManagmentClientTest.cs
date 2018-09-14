@@ -1,4 +1,7 @@
-﻿using Newtonsoft.Json;
+﻿// Copyright (c) Lykke Corp.
+// Licensed under the MIT License. See the LICENSE file in the project root for more information.
+
+using Newtonsoft.Json;
 using NUnit.Framework;
 
 namespace RabbitMqBrokerTests
