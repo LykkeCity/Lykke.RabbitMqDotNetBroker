@@ -99,7 +99,7 @@ namespace Lykke.RabbitMqBroker.Subscriber
 
         public RabbitMqSubscriptionSettings UseRoutingKey(string routingKey)
         {
-            RoutingKey = routingKey;
+            RoutingKey = routingKey ?? string.Empty;
 
             return this;
         }
