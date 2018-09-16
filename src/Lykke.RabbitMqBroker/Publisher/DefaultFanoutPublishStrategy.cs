@@ -18,7 +18,7 @@ namespace Lykke.RabbitMqBroker.Publisher
             {
                 throw new ArgumentNullException(nameof(settings));
             }
-            _routingKey = settings.RoutingKey ?? "";
+            _routingKey = settings.RoutingKey ?? string.Empty;
             _durable = settings.IsDurable;
         }
 

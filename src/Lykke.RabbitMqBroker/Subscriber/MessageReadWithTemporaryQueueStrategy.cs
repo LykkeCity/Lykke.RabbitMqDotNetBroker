@@ -13,7 +13,7 @@ namespace Lykke.RabbitMqBroker.Subscriber
 
         public MessageReadWithTemporaryQueueStrategy(string routingKey = "")
         {
-            _routingKey = routingKey ?? "";
+            _routingKey = routingKey ?? string.Empty;
         }
 
         public string Configure(RabbitMqSubscriptionSettings settings, IModel channel)
@@ -38,7 +38,7 @@ namespace Lykke.RabbitMqBroker.Subscriber
                 };
                 channel.ExchangeDeclare(settings.DeadLetterExchangeName, "direct", durable: true);
                 channel.QueueDeclare(poisonQueueName, durable: settings.IsDurable, exclusive: false, autoDelete: false);
-                channel.QueueBind(poisonQueueName, settings.DeadLetterExchangeName, settings.RoutingKey ?? "");
+                channel.QueueBind(poisonQueueName, settings.DeadLetterExchangeName, settings.RoutingKey ?? string.Empty);
             }
 
             settings.QueueName = channel.QueueDeclare(queueName, durable: settings.IsDurable, exclusive: false, autoDelete: autodelete, arguments: args).QueueName;
@@ -47,7 +47,7 @@ namespace Lykke.RabbitMqBroker.Subscriber
             channel.QueueBind(
                 queue: settings.QueueName,
                 exchange: settings.ExchangeName,
-                routingKey: string.IsNullOrWhiteSpace(_routingKey) ? settings.RoutingKey ?? "" : _routingKey);
+                routingKey: string.IsNullOrWhiteSpace(_routingKey) ? settings.RoutingKey ?? string.Empty : _routingKey);
 
             return settings.QueueName;
         }
