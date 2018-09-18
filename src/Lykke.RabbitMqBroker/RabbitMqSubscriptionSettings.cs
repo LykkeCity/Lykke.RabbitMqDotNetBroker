@@ -41,7 +41,7 @@ namespace Lykke.RabbitMqBroker.Subscriber
         /// </summary>
         /// <param name="connectionString"></param>
         /// <param name="nameOfEndpoint">Endpoint name without "lykke" namespace</param>
-        [Obsolete("Use ForPublisher method to avoid lykke.lykke duplication in echange name")]
+        [Obsolete("Use ForPublisher method to avoid lykke.lykke duplication in exchange name")]
         public static RabbitMqSubscriptionSettings CreateForPublisher(string connectionString, string nameOfEndpoint)
         {
             return CreateForPublisher(
@@ -56,7 +56,7 @@ namespace Lykke.RabbitMqBroker.Subscriber
         /// <param name="connectionString"></param>
         /// <param name="namespace">Endpoint's namespace</param>
         /// <param name="nameOfEndpoint">Endpoint's name</param>
-        [Obsolete("Use ForPublisher method to avoid lykke.lykke duplication in echange name")]
+        [Obsolete("Use ForPublisher method to avoid lykke.lykke duplication in exchange name")]
         public static RabbitMqSubscriptionSettings CreateForPublisher(string connectionString, string @namespace, string nameOfEndpoint)
         {
             return new RabbitMqSubscriptionSettings
@@ -72,7 +72,7 @@ namespace Lykke.RabbitMqBroker.Subscriber
         /// <param name="connectionString"></param>
         /// <param name="nameOfSourceEndpoint">Endpoint's name, to which messages subscriber want to be subsribed, without "lykke" namespace</param>
         /// <param name="nameOfEndpoint">Subscribers's endpoint name, without "lykke" namepsace</param>
-        [Obsolete("Use ForSubscriber method to avoid lykke.lykke duplication in echange name")]
+        [Obsolete("Use ForSubscriber method to avoid lykke.lykke duplication in exchange name")]
         public static RabbitMqSubscriptionSettings CreateForSubscriber(
             string connectionString,
             string nameOfSourceEndpoint,
@@ -94,7 +94,7 @@ namespace Lykke.RabbitMqBroker.Subscriber
         /// <param name="nameOfSourceEndpoint">Endpoint's name, to which messages subscriber want to be subsribed</param>
         /// <param name="namespaceOfEndpoint">Subscriber's endpoint namesace</param>
         /// <param name="nameOfEndpoint">Subscribers's endpoint name</param>
-        [Obsolete("Use ForSubscriber method to avoid lykke.lykke duplication in echange name")]
+        [Obsolete("Use ForSubscriber method to avoid lykke.lykke duplication in exchange name")]
         public static RabbitMqSubscriptionSettings CreateForSubscriber(
             string connectionString,
             string namespaceOfSourceEndpoint,
