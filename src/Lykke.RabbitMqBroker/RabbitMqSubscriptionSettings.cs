@@ -10,6 +10,10 @@ namespace Lykke.RabbitMqBroker.Subscriber
     [PublicAPI]
     public sealed class RabbitMqSubscriptionSettings
     {
+        internal const string LykkeNameSpace = "lykke";
+        internal static TimeSpan DefaultReconnectionDelay = TimeSpan.FromSeconds(3);
+        internal const int DefaultReconnectionsCountToAlarm = 20;
+
         public string ConnectionString { get; set; }
         public string QueueName { get; set; }
         public string ExchangeName { get; set; }
@@ -27,8 +31,8 @@ namespace Lykke.RabbitMqBroker.Subscriber
 
         public RabbitMqSubscriptionSettings()
         {
-            ReconnectionDelay = TimeSpan.FromSeconds(3);
-            ReconnectionsCountToAlarm = 20;
+            ReconnectionDelay = DefaultReconnectionDelay;
+            ReconnectionsCountToAlarm = DefaultReconnectionsCountToAlarm;
             RoutingKey = string.Empty;
         }
 
@@ -39,7 +43,10 @@ namespace Lykke.RabbitMqBroker.Subscriber
         /// <param name="nameOfEndpoint">Endpoint name without "lykke" namespace</param>
         public static RabbitMqSubscriptionSettings CreateForPublisher(string connectionString, string nameOfEndpoint)
         {
-            return CreateForPublisher(connectionString, "lykke", nameOfEndpoint);
+            return CreateForPublisher(
+                connectionString,
+                LykkeNameSpace,
+                nameOfEndpoint);
         }
 
         /// <summary>
@@ -63,10 +70,17 @@ namespace Lykke.RabbitMqBroker.Subscriber
         /// <param name="connectionString"></param>
         /// <param name="nameOfSourceEndpoint">Endpoint's name, to which messages subscriber want to be subsribed, without "lykke" namespace</param>
         /// <param name="nameOfEndpoint">Subscribers's endpoint name, without "lykke" namepsace</param>
-        public static RabbitMqSubscriptionSettings CreateForSubscriber(string connectionString, 
-            string nameOfSourceEndpoint, string nameOfEndpoint)
+        public static RabbitMqSubscriptionSettings CreateForSubscriber(
+            string connectionString,
+            string nameOfSourceEndpoint,
+            string nameOfEndpoint)
         {
-            return CreateForSubscriber(connectionString, "lykke", nameOfSourceEndpoint, "lykke", nameOfEndpoint);
+            return CreateForSubscriber(
+                connectionString,
+                LykkeNameSpace,
+                nameOfSourceEndpoint,
+                LykkeNameSpace,
+                nameOfEndpoint);
         }
 
         /// <summary>
@@ -77,9 +91,12 @@ namespace Lykke.RabbitMqBroker.Subscriber
         /// <param name="nameOfSourceEndpoint">Endpoint's name, to which messages subscriber want to be subsribed</param>
         /// <param name="namespaceOfEndpoint">Subscriber's endpoint namesace</param>
         /// <param name="nameOfEndpoint">Subscribers's endpoint name</param>
-        public static RabbitMqSubscriptionSettings CreateForSubscriber(string connectionString, 
-            string namespaceOfSourceEndpoint, string nameOfSourceEndpoint, 
-            string namespaceOfEndpoint, string nameOfEndpoint)
+        public static RabbitMqSubscriptionSettings CreateForSubscriber(
+            string connectionString,
+            string namespaceOfSourceEndpoint,
+            string nameOfSourceEndpoint,
+            string namespaceOfEndpoint,
+            string nameOfEndpoint)
         {
             return new RabbitMqSubscriptionSettings
             {
@@ -120,6 +137,8 @@ namespace Lykke.RabbitMqBroker.Subscriber
 
         private static string GetExchangeName(string @namespace, string endpointName)
         {
+            if (@namespace == LykkeNameSpace && endpointName.StartsWith($"{LykkeNameSpace}."))
+                return $"{NormalizeName(endpointName)}";
             return $"{NormalizeName(@namespace)}.{NormalizeName(endpointName)}";
         }
 
@@ -130,6 +149,8 @@ namespace Lykke.RabbitMqBroker.Subscriber
 
         private static string GetDeadLetterExchangeName(string @namespace, string nameOfSourceEndpoint, string endpointName)
         {
+            if (@namespace == LykkeNameSpace && endpointName.StartsWith($"{LykkeNameSpace}."))
+                return $"{NormalizeName(endpointName)}.{NormalizeName(nameOfSourceEndpoint)}.dlx";
             return $"{NormalizeName(@namespace)}.{NormalizeName(endpointName)}.{NormalizeName(nameOfSourceEndpoint)}.dlx";
         }
 
