@@ -12,7 +12,7 @@ namespace Lykke.RabbitMqBroker.Tests
             var connString = "test.ConnString";
             var endPoint = "test.Endpoint";
 
-            var shortPubSettings = RabbitMqSubscriptionSettings.CreateForPublisher(connString, endPoint);
+            var shortPubSettings = RabbitMqSubscriptionSettings.ForPublisher(connString, endPoint);
 
             Assert.AreEqual(connString, shortPubSettings.ConnectionString);
             Assert.Null(shortPubSettings.DeadLetterExchangeName);
@@ -31,7 +31,7 @@ namespace Lykke.RabbitMqBroker.Tests
             var endPoint = "test.Endpoint";
             var namespace1 = "test.Namespace";
 
-            var shortPubSettings = RabbitMqSubscriptionSettings.CreateForPublisher(
+            var shortPubSettings = RabbitMqSubscriptionSettings.ForPublisher(
                 connString,
                 namespace1,
                 endPoint);
@@ -52,7 +52,7 @@ namespace Lykke.RabbitMqBroker.Tests
             var endPoint = $"{RabbitMqSubscriptionSettings.LykkeNameSpace}.Endpoint";
             var namespace1 = RabbitMqSubscriptionSettings.LykkeNameSpace;
 
-            var shortPubSettings = RabbitMqSubscriptionSettings.CreateForPublisher(
+            var shortPubSettings = RabbitMqSubscriptionSettings.ForPublisher(
                 "test.ConnString",
                 namespace1,
                 endPoint);
@@ -66,7 +66,7 @@ namespace Lykke.RabbitMqBroker.Tests
             var endPoint = $"{RabbitMqSubscriptionSettings.LykkeNameSpace}.Endpoint";
             var namespace1 = $"{RabbitMqSubscriptionSettings.LykkeNameSpace}.Namespace";
 
-            var shortPubSettings = RabbitMqSubscriptionSettings.CreateForPublisher(
+            var shortPubSettings = RabbitMqSubscriptionSettings.ForPublisher(
                 "test.ConnString",
                 namespace1,
                 endPoint);
@@ -81,7 +81,7 @@ namespace Lykke.RabbitMqBroker.Tests
             var source = "test.Source";
             var endPoint = "test.Endpoint";
 
-            var shortPubSettings = RabbitMqSubscriptionSettings.CreateForSubscriber(
+            var shortPubSettings = RabbitMqSubscriptionSettings.ForSubscriber(
                 connString,
                 source,
                 endPoint);
@@ -105,7 +105,7 @@ namespace Lykke.RabbitMqBroker.Tests
             var endpointNamespace = "test.EndpointNamespace";
             var endPoint = "test.Endpoint";
 
-            var shortPubSettings = RabbitMqSubscriptionSettings.CreateForSubscriber(
+            var shortPubSettings = RabbitMqSubscriptionSettings.ForSubscriber(
                 connString,
                 sourceNamespace,
                 source,
@@ -130,7 +130,7 @@ namespace Lykke.RabbitMqBroker.Tests
             var endpointNamespace = RabbitMqSubscriptionSettings.LykkeNameSpace;
             var endPoint = $"{RabbitMqSubscriptionSettings.LykkeNameSpace}.Endpoint";
 
-            var shortPubSettings = RabbitMqSubscriptionSettings.CreateForSubscriber(
+            var shortPubSettings = RabbitMqSubscriptionSettings.ForSubscriber(
                 "test.ConnString",
                 sourceNamespace,
                 source,
@@ -150,7 +150,7 @@ namespace Lykke.RabbitMqBroker.Tests
             var endpointNamespace = $"{RabbitMqSubscriptionSettings.LykkeNameSpace}.EndpointNamespace";
             var endPoint = $"{RabbitMqSubscriptionSettings.LykkeNameSpace}.Endpoint";
 
-            var shortPubSettings = RabbitMqSubscriptionSettings.CreateForSubscriber(
+            var shortPubSettings = RabbitMqSubscriptionSettings.ForSubscriber(
                 "test.ConnString",
                 sourceNamespace,
                 source,
