@@ -184,7 +184,7 @@ namespace Lykke.RabbitMqBroker.Publisher
 
         private void ConnectAndWrite()
         {
-            var factory = new ConnectionFactory { Uri = _settings.ConnectionString };
+            var factory = new ConnectionFactory { Uri = new Uri(_settings.ConnectionString) };
 
             _log.WriteInfo(nameof(ConnectAndWrite), _settings.GetPublisherName(), $"{Name}: trying to connect to {_settings.ConnectionString} ({_exchangeQueueName})");
 
