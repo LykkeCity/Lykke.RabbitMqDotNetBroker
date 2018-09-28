@@ -33,7 +33,7 @@
     <PackageReference Include="MessagePack" Version="1.7.3.4" />
     <PackageReference Include="Microsoft.ApplicationInsights" Version="2.6.4" />
     <PackageReference Include="protobuf-net" Version="2.3.13" />
-    <PackageReference Include="RabbitMQ.Client" Version="4.1.1" />
+    <PackageReference Include="RabbitMQ.Client" Version="5.1.0" />
     <PackageReference Include="SourceLink.Create.CommandLine" Version="2.8.3" PrivateAssets="All" />
   </ItemGroup>
   <ItemGroup Label="dotnet pack instructions">
