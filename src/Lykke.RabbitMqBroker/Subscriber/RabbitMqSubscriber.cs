@@ -199,13 +199,13 @@ namespace Lykke.RabbitMqBroker.Subscriber
         private void ConnectAndReadAsync(RabbitMqSubscriptionSettings settings)
         {
             var factory = new ConnectionFactory { Uri = settings.ConnectionString };
-            _log.WriteInfo(nameof(ConnectAndReadAsync), settings.GetSubscriberName(), $"Trying to connect to {settings.ConnectionString} ({_exchangeQueueName})");
+            _log.WriteInfo(nameof(ConnectAndReadAsync), settings.GetSubscriberName(), $"Trying to connect to {factory.Endpoint} ({_exchangeQueueName})");
 
             var cn = $"[Sub] {PlatformServices.Default.Application.ApplicationName} {PlatformServices.Default.Application.ApplicationVersion} to {_exchangeQueueName}";
             using (var connection = factory.CreateConnection(cn))
             using (var channel = connection.CreateModel())
             {
-                _log.WriteInfo(nameof(ConnectAndReadAsync), settings.GetSubscriberName(), $"Connected to {settings.ConnectionString} ({_exchangeQueueName})");
+                _log.WriteInfo(nameof(ConnectAndReadAsync), settings.GetSubscriberName(), $"Connected to {factory.Endpoint} ({_exchangeQueueName})");
 
                 var queueName = _messageReadStrategy.Configure(settings, channel);
 
