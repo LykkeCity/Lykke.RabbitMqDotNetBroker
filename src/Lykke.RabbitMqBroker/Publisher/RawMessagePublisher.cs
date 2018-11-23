@@ -186,13 +186,13 @@ namespace Lykke.RabbitMqBroker.Publisher
         {
             var factory = new ConnectionFactory { Uri = _settings.ConnectionString };
 
-            _log.WriteInfo(nameof(ConnectAndWrite), _settings.GetPublisherName(), $"{Name}: trying to connect to {_settings.ConnectionString} ({_exchangeQueueName})");
+            _log.WriteInfo(nameof(ConnectAndWrite), _settings.GetPublisherName(), $"{Name}: trying to connect to {factory.Endpoint} ({_exchangeQueueName})");
 
             var cn = $"[Pub] {PlatformServices.Default.Application.ApplicationName} {PlatformServices.Default.Application.ApplicationVersion} to {_settings.ExchangeName ?? ""}";
             using (var connection = factory.CreateConnection(cn))
             using (var channel = connection.CreateModel())
             {
-                _log.WriteInfo(nameof(ConnectAndWrite), _settings.GetPublisherName(), $"{Name}: connected to {_settings.ConnectionString} ({_exchangeQueueName})");
+                _log.WriteInfo(nameof(ConnectAndWrite), _settings.GetPublisherName(), $"{Name}: connected to {factory.Endpoint} ({_exchangeQueueName})");
                 _publishStrategy.Configure(_settings, channel);
 
                 while (!IsStopped())
