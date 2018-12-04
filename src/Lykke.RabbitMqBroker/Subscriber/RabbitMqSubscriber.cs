@@ -25,27 +25,30 @@ namespace Lykke.RabbitMqBroker.Subscriber
     public class RabbitMqSubscriber<TTopicModel> : IStartable, IStopable, IMessageConsumer<TTopicModel>
     {
         private const string TelemetryType = "RabbitMq Subscriber";
-        private Func<TTopicModel, Task> _eventHandler;
-        private Func<TTopicModel, CancellationToken, Task> _cancallableEventHandler;
+
         private readonly RabbitMqSubscriptionSettings _settings;
         private readonly IErrorHandlingStrategy _errorHandlingStrategy;
-        private readonly bool _submitTelemetry;
         private readonly TelemetryClient _telemetry = new TelemetryClient();
+        private readonly bool _submitTelemetry;
         private readonly string _exchangeQueueName;
         private readonly string _typeName = typeof(TTopicModel).Name;
+
+        private Func<TTopicModel, Task> _eventHandler;
+        private Func<TTopicModel, CancellationToken, Task> _cancallableEventHandler;
         private bool _enableMessageDeduplication;
         private bool _useAlternativeExchange;
+        private bool _disposed;
         private string _alternativeExchangeConnString;
-        private IDeduplicator _deduplicator;
         private string _deduplicatorHeader;
+        private int _reconnectionsInARowCount;
+        private ushort? _prefetchCount;
+        private IDeduplicator _deduplicator;
         private ILog _log;
         private Thread _thread;
         private Thread _alternateThread;
         private IMessageDeserializer<TTopicModel> _messageDeserializer;
         private IMessageReadStrategy _messageReadStrategy;
-        private int _reconnectionsInARowCount;
         private CancellationTokenSource _cancellationTokenSource;
-        private bool _disposed;
 
         [Obsolete]
         public RabbitMqSubscriber(
@@ -149,6 +152,12 @@ namespace Lykke.RabbitMqBroker.Subscriber
             return this;
         }
 
+        public RabbitMqSubscriber<TTopicModel> SetPrefetchCount(ushort prefetchCount)
+        {
+            _prefetchCount = prefetchCount;
+            return this;
+        }
+
         #endregion
 
         void IMessageConsumer<TTopicModel>.Subscribe(Func<TTopicModel, Task> callback)
@@ -206,6 +215,9 @@ namespace Lykke.RabbitMqBroker.Subscriber
             using (var channel = connection.CreateModel())
             {
                 _log.WriteInfo(nameof(ConnectAndReadAsync), settings.GetSubscriberName(), $"Connected to {factory.Endpoint} ({_exchangeQueueName})");
+
+                if (_prefetchCount.HasValue)
+                    channel.BasicQos(0, _prefetchCount.Value, false);
 
                 var queueName = _messageReadStrategy.Configure(settings, channel);
 
