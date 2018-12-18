@@ -7,6 +7,9 @@ using RabbitMQ.Client;
 
 namespace Lykke.RabbitMqBroker.Publisher
 {
+    /// <summary>
+    /// Publish strategy for fanout exchange.
+    /// </summary>
     public sealed class DefaultFanoutPublishStrategy : IRabbitMqPublishStrategy
     {
         private readonly bool _durable;
