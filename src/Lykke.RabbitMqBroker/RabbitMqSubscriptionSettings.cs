@@ -193,7 +193,15 @@ namespace Lykke.RabbitMqBroker.Subscriber
         {
             RoutingKey = routingKey ?? string.Empty;
 
-            if (!string.IsNullOrWhiteSpace(RoutingKey)
+            return this;
+        }
+
+        public RabbitMqSubscriptionSettings UseRoutingKey(string routingKey, bool updateQueueNameIfNecessary)
+        {
+            RoutingKey = routingKey ?? string.Empty;
+
+            if (updateQueueNameIfNecessary
+                && !string.IsNullOrWhiteSpace(RoutingKey)
                 && !string.IsNullOrWhiteSpace(QueueName)
                 && !QueueName.EndsWith(RoutingKey))
                 QueueName = $"{QueueName}.{RoutingKey}";
