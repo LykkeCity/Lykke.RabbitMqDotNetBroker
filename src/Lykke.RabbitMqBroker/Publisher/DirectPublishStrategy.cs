@@ -8,30 +8,32 @@ using RabbitMQ.Client;
 namespace Lykke.RabbitMqBroker.Publisher
 {
     /// <summary>
-    /// Publish strategy for fanout exchange.
+    /// Publish strategy for direct exchange.
     /// </summary>
-    public sealed class DefaultFanoutPublishStrategy : IRabbitMqPublishStrategy
+    public sealed class DirectPublishStrategy : IRabbitMqPublishStrategy
     {
         private readonly bool _durable;
+        private readonly string _routingKey;
 
-        public DefaultFanoutPublishStrategy(RabbitMqSubscriptionSettings settings)
+        public DirectPublishStrategy(RabbitMqSubscriptionSettings settings)
         {
             if (settings == null)
                 throw new ArgumentNullException(nameof(settings));
 
             _durable = settings.IsDurable;
+            _routingKey = settings.RoutingKey ?? string.Empty;
         }
 
         public void Configure(RabbitMqSubscriptionSettings settings, IModel channel)
         {
-            channel.ExchangeDeclare(exchange: settings.ExchangeName, type: "fanout", durable: _durable);
+            channel.ExchangeDeclare(exchange: settings.ExchangeName, type: "direct", durable: _durable);
         }
 
         public void Publish(RabbitMqSubscriptionSettings settings, IModel channel, RawMessage message)
         {
             channel.BasicPublish(
                 exchange: settings.ExchangeName,
-                routingKey: null,
+                routingKey: message.RoutingKey ?? _routingKey,
                 basicProperties: null,
                 body: message.Body);
         }
