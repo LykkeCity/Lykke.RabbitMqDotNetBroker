@@ -31,7 +31,8 @@ namespace Lykke.RabbitMqBroker.Publisher
         {
             channel.BasicPublish(
                 exchange: settings.ExchangeName,
-                routingKey: null,
+                // routingKey can't be null - I consider this as a bug in RabbitMQ.Client
+                routingKey: string.Empty,
                 basicProperties: null,
                 body: message.Body);
         }
