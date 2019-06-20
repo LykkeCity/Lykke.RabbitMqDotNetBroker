@@ -1,11 +1,17 @@
 ﻿using System;
 using System.Threading.Tasks;
+using Autofac;
+using Common;
 using JetBrains.Annotations;
 using Lykke.Common.Log;
 using Lykke.RabbitMqBroker.Subscriber;
 
 namespace Lykke.RabbitMqBroker.Publisher
 {
+    /// <summary>
+    /// Standard implementation for IRabbitPublisher with json serializer.
+    /// </summary>
+    /// <typeparam name="TMessage"></typeparam>
     [PublicAPI]
     public class JsonRabbitPublisher<TMessage> : IRabbitPublisher<TMessage>
     {
@@ -24,6 +30,7 @@ namespace Lykke.RabbitMqBroker.Publisher
             _exchangeName = exchangeName;
         }
 
+        /// <inheritdoc cref="IStartable.Start"/>
         public void Start()
         {
             var settings = RabbitMqSubscriptionSettings
@@ -37,16 +44,19 @@ namespace Lykke.RabbitMqBroker.Publisher
                 .Start();
         }
 
+        /// <inheritdoc cref="IStopable.Stop"/>
         public void Stop()
         {
             _rabbitMqPublisher?.Stop();
         }
 
+        /// <inheritdoc cref="IDisposable"/>
         public void Dispose()
         {
             _rabbitMqPublisher?.Dispose();
         }
 
+        /// <inheritdoc cref="IRabbitPublisher{TMessage}"/>
         public async Task PublishAsync(TMessage message)
         {
             await _rabbitMqPublisher.ProduceAsync(message);
