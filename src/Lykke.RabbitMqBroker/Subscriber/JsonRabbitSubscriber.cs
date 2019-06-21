@@ -13,10 +13,11 @@ namespace Lykke.RabbitMqBroker.Subscriber
     [PublicAPI]
     public abstract class JsonRabbitSubscriber<TMessage> : IStartable, IStopable
     {
-        private readonly ILogFactory _logFactory;
         private readonly string _connectionString;
         private readonly string _exchangeName;
         private readonly string _queueName;
+        private readonly bool _isDurable;
+        private readonly ILogFactory _logFactory;
 
         private RabbitMqSubscriber<TMessage> _subscriber;
 
@@ -25,10 +26,26 @@ namespace Lykke.RabbitMqBroker.Subscriber
             string exchangeName,
             string queueName,
             ILogFactory logFactory)
+            : this(
+                connectionString,
+                exchangeName,
+                queueName,
+                true,
+                logFactory)
+        {
+        }
+
+        protected JsonRabbitSubscriber(
+            string connectionString,
+            string exchangeName,
+            string queueName,
+            bool isDurable,
+            ILogFactory logFactory)
         {
             _connectionString = connectionString ?? throw new ArgumentNullException(nameof(connectionString));
             _exchangeName = exchangeName ?? throw new ArgumentNullException(nameof(exchangeName));
             _queueName = queueName ?? throw new ArgumentNullException(nameof(queueName));
+            _isDurable = isDurable;
             _logFactory = logFactory ?? throw new ArgumentNullException(nameof(logFactory));
         }
 
@@ -36,10 +53,11 @@ namespace Lykke.RabbitMqBroker.Subscriber
         public void Start()
         {
             var rabbitMqSubscriptionSettings = RabbitMqSubscriptionSettings.ForSubscriber(
-                    _connectionString,
-                    _exchangeName,
-                    _queueName)
-                .MakeDurable();
+                _connectionString,
+                _exchangeName,
+                _queueName);
+            if (_isDurable)
+                rabbitMqSubscriptionSettings = rabbitMqSubscriptionSettings.MakeDurable();
 
             _subscriber = new RabbitMqSubscriber<TMessage>(
                     _logFactory,
