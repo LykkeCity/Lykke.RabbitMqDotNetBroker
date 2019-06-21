@@ -26,8 +26,8 @@ namespace Lykke.RabbitMqBroker.Publisher
             string exchangeName)
         {
             _logFactory = logFactory ?? throw new ArgumentNullException(nameof(logFactory));
-            _connectionString = connectionString;
-            _exchangeName = exchangeName;
+            _connectionString = connectionString ?? throw new ArgumentNullException(nameof(connectionString));
+            _exchangeName = exchangeName ?? throw new ArgumentNullException(nameof(exchangeName));
         }
 
         /// <inheritdoc cref="IStartable.Start"/>
