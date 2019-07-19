@@ -11,7 +11,7 @@ namespace Lykke.RabbitMqBroker.Publisher
     /// <summary>
     /// Standard implementation for IRabbitPublisher with json serializer.
     /// </summary>
-    /// <typeparam name="TMessage"></typeparam>
+    /// <typeparam name="TMessage">Message type.</typeparam>
     [PublicAPI]
     public class JsonRabbitPublisher<TMessage> : IRabbitPublisher<TMessage>
     {
@@ -47,18 +47,26 @@ namespace Lykke.RabbitMqBroker.Publisher
         /// <inheritdoc cref="IStopable.Stop"/>
         public void Stop()
         {
-            _rabbitMqPublisher?.Stop();
+            if (_rabbitMqPublisher != null)
+            {
+                _rabbitMqPublisher.Stop();
+                _rabbitMqPublisher.Dispose();
+                _rabbitMqPublisher = null;
+            }
         }
 
         /// <inheritdoc cref="IDisposable"/>
         public void Dispose()
         {
-            _rabbitMqPublisher?.Dispose();
+            Stop();
         }
 
         /// <inheritdoc cref="IRabbitPublisher{TMessage}"/>
         public async Task PublishAsync(TMessage message)
         {
+            if (_rabbitMqPublisher == null)
+                throw new InvalidOperationException("Publisher is not started");
+
             await _rabbitMqPublisher.ProduceAsync(message);
         }
     }
