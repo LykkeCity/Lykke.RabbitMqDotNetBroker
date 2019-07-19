@@ -10,6 +10,7 @@ namespace Lykke.RabbitMqBroker.Subscriber
     /// <summary>
     /// Base class for standard json-based subscriber
     /// </summary>
+    /// <typeparam name="TMessage">Message type.</typeparam>
     [PublicAPI]
     public abstract class JsonRabbitSubscriber<TMessage> : IStartable, IStopable
     {
@@ -75,13 +76,18 @@ namespace Lykke.RabbitMqBroker.Subscriber
         /// <inheritdoc cref="IStopable.Stop"/>
         public void Stop()
         {
-            _subscriber.Stop();
+            if (_subscriber != null)
+            {
+                _subscriber.Stop();
+                _subscriber.Dispose();
+                _subscriber = null;
+            }
         }
 
         /// <inheritdoc cref="IDisposable"/>
         public void Dispose()
         {
-            _subscriber.Dispose();
+            Stop();
         }
 
         protected abstract Task ProcessMessageAsync(TMessage message);
