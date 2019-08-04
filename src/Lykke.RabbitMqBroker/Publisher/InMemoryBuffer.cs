@@ -35,18 +35,20 @@ namespace Lykke.RabbitMqBroker.Publisher
             _items.TryDequeue(out _);
         }
 
-        [CanBeNull]
         public RawMessage WaitOneAndPeek(CancellationToken cancellationToken)
         {
-            if (_items.Count > 0 || _publishLock.WaitOne())
+            do
             {
-                if (_items.TryPeek(out var result))
+                cancellationToken.ThrowIfCancellationRequested();
+
+                if (_items.Count > 0 || _publishLock.WaitOne(TimeSpan.FromSeconds(1)))
                 {
-                    return result;
+                    if (_items.TryPeek(out var result))
+                    {
+                        return result;
+                    }
                 }
-            }
-            
-            return null;
+            } while (true);
         }
 
         public void Dispose()
