@@ -10,7 +10,7 @@ using JetBrains.Annotations;
 
 namespace Lykke.RabbitMqBroker.Publisher
 {
-    public sealed class InMemoryBuffer : IPublisherBuffer
+    internal sealed class InMemoryBuffer : IPublisherBuffer
     {
         private readonly ConcurrentQueue<RawMessage> _items;
         private readonly AutoResetEvent _publishLock;
