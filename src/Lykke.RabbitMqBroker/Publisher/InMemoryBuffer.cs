@@ -24,19 +24,19 @@ namespace Lykke.RabbitMqBroker.Publisher
 
         public int Count => _items.Count;
 
-        public void Enqueue(RawMessage message, CancellationToken cancelationToken)
+        public void Enqueue(RawMessage message, CancellationToken cancellationToken)
         {
             _items.Enqueue(message);
             _publishLock.Set();
         }
 
-        public void Dequeue(CancellationToken cancelationToken)
+        public void Dequeue(CancellationToken cancellationToken)
         {
             _items.TryDequeue(out _);
         }
 
         [CanBeNull]
-        public RawMessage WaitOneAndPeek(CancellationToken cancelationToken)
+        public RawMessage WaitOneAndPeek(CancellationToken cancellationToken)
         {
             if (_items.Count > 0 || _publishLock.WaitOne())
             {

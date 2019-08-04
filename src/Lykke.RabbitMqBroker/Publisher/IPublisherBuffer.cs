@@ -11,10 +11,10 @@ namespace Lykke.RabbitMqBroker.Publisher
     {
         int Count { get; }
 
-        void Enqueue(RawMessage message, CancellationToken cancelationToken);
+        void Enqueue(RawMessage message, CancellationToken cancellationToken);
 
-        void Dequeue(CancellationToken cancelationToken);
+        void Dequeue(CancellationToken cancellationToken);
 
-        RawMessage WaitOneAndPeek(CancellationToken cancelationToken);
+        RawMessage WaitOneAndPeek(CancellationToken cancellationToken);
     }
 }
