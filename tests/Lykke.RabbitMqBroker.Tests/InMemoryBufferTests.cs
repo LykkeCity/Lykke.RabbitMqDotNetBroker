@@ -1,3 +1,5 @@
+using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Lykke.RabbitMqBroker.Publisher;
@@ -9,39 +11,48 @@ namespace Lykke.RabbitMqBroker.Tests
     public class InMemoryBufferTests
     {
         [Test]
-        public void ShouldWaitForEnqueue()
+        public async Task ShouldWaitForEnqueue()
         {
             var buffer = new InMemoryBuffer();
-            var stop = false;
+            var cts = new CancellationTokenSource();
             var attemptsToRead = 0;
             
             var thread = new Thread(() =>
             {
-                while (!stop)
+                while (!cts.IsCancellationRequested)
                 {
-                    var message = buffer.WaitOneAndPeek(CancellationToken.None);
-                    Thread.Sleep(1);
-                    attemptsToRead++;
-                    if (message != null)
+                    try
                     {
-                        buffer.Dequeue(CancellationToken.None);
+                        var message = buffer.WaitOneAndPeek(cts.Token);
+                        Thread.Sleep(50);
+                        attemptsToRead++;
+                        if (message != null)
+                        {
+                            buffer.Dequeue(cts.Token);
+                        }
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        //that's ok )
                     }
                 }
             });
             
             thread.Start();
 
-            for (int i = 0; i < 10; i++)
-            {
+            var writeTasks = Enumerable.Range(0, 10).Select(i =>
                 Task.Factory.StartNew(() =>
-                    {
-                        buffer.Enqueue(new RawMessage(new byte[0], string.Empty), CancellationToken.None);
-                        buffer.Enqueue(new RawMessage(new byte[0], string.Empty), CancellationToken.None);
-                    });    
-            }
+                {
+                    buffer.Enqueue(new RawMessage(new byte[0], string.Empty), cts.Token);
+                    buffer.Enqueue(new RawMessage(new byte[0], string.Empty), cts.Token);
+                })
+            );
+
+            await Task.WhenAll(writeTasks);
+            await Task.Delay(TimeSpan.FromSeconds(2));
+
+            cts.Cancel();
             
-            Thread.Sleep(25);
-            stop = true;
             Assert.AreEqual( 20, attemptsToRead);
         }
     }
