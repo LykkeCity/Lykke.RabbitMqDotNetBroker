@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using JetBrains.Annotations;
 using Lykke.RabbitMqBroker.Publisher;
 using Lykke.RabbitMqBroker.Subscriber;
 using NUnit.Framework;
@@ -123,7 +124,8 @@ namespace RabbitMqBrokerTests
 
         protected class TestBuffer : IPublisherBuffer
         {
-            private readonly BlockingCollection<RawMessage> _collection = new BlockingCollection<RawMessage>();
+            private readonly ConcurrentQueue<RawMessage> _collection = new ConcurrentQueue<RawMessage>();
+            private readonly AutoResetEvent _publishLock = new AutoResetEvent(false);
             private bool _disposed;
 
             public readonly ManualResetEventSlim Gate = new ManualResetEventSlim(false);
@@ -149,7 +151,7 @@ namespace RabbitMqBrokerTests
                 if (_disposed || !disposing)
                     return; 
             
-                _collection.Dispose();
+                _publishLock?.Dispose();
             
                 _disposed = true;
             }
@@ -158,13 +160,27 @@ namespace RabbitMqBrokerTests
 
             public void Enqueue(RawMessage message, CancellationToken cancelationToken)
             {
-                _collection.Add(message);
+                _collection.Enqueue(message);
+                _publishLock.Set();
             }
 
-            public RawMessage Dequeue(CancellationToken cancelationToken)
+            public void Dequeue(CancellationToken cancelationToken)
             {
                 Gate.Wait();
-                return _collection.Take(cancelationToken);
+                _collection.TryDequeue(out _);
+            }
+            
+            [CanBeNull]
+            public RawMessage WaitOneAndPeek()
+            {
+                _publishLock.WaitOne();
+            
+                if (_collection.TryPeek(out var result))
+                {
+                    return result;
+                }
+
+                return null;
             }
         }
     }

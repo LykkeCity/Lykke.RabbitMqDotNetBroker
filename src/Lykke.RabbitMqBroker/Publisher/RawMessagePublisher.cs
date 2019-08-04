@@ -200,11 +200,16 @@ namespace Lykke.RabbitMqBroker.Publisher
                     RawMessage message;
                     try
                     {
-                        message = _buffer.Dequeue(_cancellationTokenSource.Token);
+                        message = _buffer.WaitOneAndPeek();
                     }
                     catch (OperationCanceledException)
                     {
                         return;
+                    }
+
+                    if (message == null)
+                    {
+                        continue;
                     }
 
                     if (!connection.IsOpen)
@@ -235,6 +240,8 @@ namespace Lykke.RabbitMqBroker.Publisher
                         _publishStrategy.Publish(_settings, channel, message);
                     }
 
+                    _buffer.Dequeue(_cancellationTokenSource.Token);
+                    
                     if (_publishSynchronously)
                         _publishLock.Set();
 
