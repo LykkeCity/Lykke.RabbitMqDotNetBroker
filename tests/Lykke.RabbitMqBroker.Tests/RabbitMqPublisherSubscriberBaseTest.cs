@@ -142,21 +142,21 @@ namespace RabbitMqBrokerTests
 
             public int Count => _buffer.Count;
 
-            public void Enqueue(RawMessage message, CancellationToken cancelationToken)
+            public void Enqueue(RawMessage message, CancellationToken cancellationToken)
             {
-                _buffer.Enqueue(message, cancelationToken);
+                _buffer.Enqueue(message, cancellationToken);
             }
 
-            public void Dequeue(CancellationToken cancelationToken)
+            public void Dequeue(CancellationToken cancellationToken)
             {
-                _buffer.Dequeue(cancelationToken);
+                _buffer.Dequeue(cancellationToken);
             }
             
             [CanBeNull]
-            public RawMessage WaitOneAndPeek(CancellationToken cancelationToken)
+            public RawMessage WaitOneAndPeek(CancellationToken cancellationToken)
             {
-                Gate.Wait( cancelationToken);
-                return _buffer.WaitOneAndPeek( cancelationToken);
+                Gate.Wait( cancellationToken);
+                return _buffer.WaitOneAndPeek( cancellationToken);
             }
         }
     }
