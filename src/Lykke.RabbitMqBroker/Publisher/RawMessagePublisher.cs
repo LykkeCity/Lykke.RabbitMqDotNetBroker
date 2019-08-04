@@ -200,7 +200,7 @@ namespace Lykke.RabbitMqBroker.Publisher
                     RawMessage message;
                     try
                     {
-                        message = _buffer.WaitOneAndPeek();
+                        message = _buffer.WaitOneAndPeek(_cancellationTokenSource.Token);
                     }
                     catch (OperationCanceledException)
                     {

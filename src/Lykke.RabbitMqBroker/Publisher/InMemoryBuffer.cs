@@ -15,7 +15,7 @@ namespace Lykke.RabbitMqBroker.Publisher
         private readonly ConcurrentQueue<RawMessage> _items;
         private readonly AutoResetEvent _publishLock;
         private bool _disposed;
-
+        
         public InMemoryBuffer()
         {
             _publishLock = new AutoResetEvent(false);
@@ -36,15 +36,16 @@ namespace Lykke.RabbitMqBroker.Publisher
         }
 
         [CanBeNull]
-        public RawMessage WaitOneAndPeek()
+        public RawMessage WaitOneAndPeek(CancellationToken cancelationToken)
         {
-            _publishLock.WaitOne();
-            
-            if (_items.TryPeek(out var result))
+            if (_items.Count > 0 || _publishLock.WaitOne())
             {
-                return result;
+                if (_items.TryPeek(out var result))
+                {
+                    return result;
+                }
             }
-
+            
             return null;
         }
 

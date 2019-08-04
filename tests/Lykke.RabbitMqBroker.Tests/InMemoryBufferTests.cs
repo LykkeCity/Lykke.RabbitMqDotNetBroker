@@ -1,4 +1,5 @@
 using System.Threading;
+using System.Threading.Tasks;
 using Lykke.RabbitMqBroker.Publisher;
 using NUnit.Framework;
 
@@ -18,7 +19,8 @@ namespace Lykke.RabbitMqBroker.Tests
             {
                 while (!stop)
                 {
-                    var message = buffer.WaitOneAndPeek();
+                    var message = buffer.WaitOneAndPeek(CancellationToken.None);
+                    Thread.Sleep(1);
                     attemptsToRead++;
                     if (message != null)
                     {
@@ -28,13 +30,19 @@ namespace Lykke.RabbitMqBroker.Tests
             });
             
             thread.Start();
-            Thread.Sleep(10);
-            buffer.Enqueue(new RawMessage(new byte[0], string.Empty), CancellationToken.None);
-            Thread.Sleep(10);
-            buffer.Enqueue(new RawMessage(new byte[0], string.Empty), CancellationToken.None);
+
+            for (int i = 0; i < 10; i++)
+            {
+                Task.Factory.StartNew(() =>
+                    {
+                        buffer.Enqueue(new RawMessage(new byte[0], string.Empty), CancellationToken.None);
+                        buffer.Enqueue(new RawMessage(new byte[0], string.Empty), CancellationToken.None);
+                    });    
+            }
+            
+            Thread.Sleep(25);
             stop = true;
-            Thread.Sleep(10);
-            Assert.AreEqual( 2, attemptsToRead);
+            Assert.AreEqual( 20, attemptsToRead);
         }
     }
 }
