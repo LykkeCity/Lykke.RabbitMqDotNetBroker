@@ -13,6 +13,8 @@ namespace Lykke.RabbitMqBroker.Publisher
 
         void Enqueue(RawMessage message, CancellationToken cancelationToken);
 
-        RawMessage Dequeue(CancellationToken cancelationToken);
+        void Dequeue(CancellationToken cancelationToken);
+
+        RawMessage WaitOneAndPeek(CancellationToken cancelationToken);
     }
 }

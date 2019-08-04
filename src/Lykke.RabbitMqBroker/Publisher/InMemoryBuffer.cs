@@ -6,29 +6,47 @@ using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
+using JetBrains.Annotations;
 
 namespace Lykke.RabbitMqBroker.Publisher
 {
-    internal class InMemoryBuffer : IPublisherBuffer
+    public sealed class InMemoryBuffer : IPublisherBuffer
     {
-        private readonly BlockingCollection<RawMessage> _items;
+        private readonly ConcurrentQueue<RawMessage> _items;
+        private readonly AutoResetEvent _publishLock;
         private bool _disposed;
-
+        
         public InMemoryBuffer()
         {
-            _items = new BlockingCollection<RawMessage>();
+            _publishLock = new AutoResetEvent(false);
+            _items = new ConcurrentQueue<RawMessage>();
         }
 
         public int Count => _items.Count;
 
         public void Enqueue(RawMessage message, CancellationToken cancelationToken)
         {
-            _items.Add(message, cancelationToken);
+            _items.Enqueue(message);
+            _publishLock.Set();
         }
 
-        public RawMessage Dequeue(CancellationToken cancelationToken)
+        public void Dequeue(CancellationToken cancelationToken)
         {
-            return _items.Take(cancelationToken);
+            _items.TryDequeue(out _);
+        }
+
+        [CanBeNull]
+        public RawMessage WaitOneAndPeek(CancellationToken cancelationToken)
+        {
+            if (_items.Count > 0 || _publishLock.WaitOne())
+            {
+                if (_items.TryPeek(out var result))
+                {
+                    return result;
+                }
+            }
+            
+            return null;
         }
 
         public void Dispose()
@@ -37,12 +55,12 @@ namespace Lykke.RabbitMqBroker.Publisher
             GC.SuppressFinalize(this);
         }
         
-        protected virtual void Dispose(bool disposing)
+        private void Dispose(bool disposing)
         {
             if (_disposed || !disposing)
                 return; 
             
-            _items.Dispose();
+            _publishLock?.Dispose();
             
             _disposed = true;
         }

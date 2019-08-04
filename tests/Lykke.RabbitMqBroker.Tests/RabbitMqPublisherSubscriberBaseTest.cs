@@ -4,17 +4,16 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using JetBrains.Annotations;
 using Lykke.RabbitMqBroker.Publisher;
 using Lykke.RabbitMqBroker.Subscriber;
 using NUnit.Framework;
 using RabbitMQ.Client;
+using System.Collections;
+using System.Threading;
 
 namespace RabbitMqBrokerTests
 {
-    using System.Collections;
-    using System.Collections.Concurrent;
-    using System.Threading;
-
     [TestFixture]
     public abstract class RabbitMqPublisherSubscriberBaseTest
     {
@@ -123,14 +122,12 @@ namespace RabbitMqBrokerTests
 
         protected class TestBuffer : IPublisherBuffer
         {
-            private readonly BlockingCollection<RawMessage> _collection = new BlockingCollection<RawMessage>();
-            private bool _disposed;
-
             public readonly ManualResetEventSlim Gate = new ManualResetEventSlim(false);
+            private InMemoryBuffer _buffer = new InMemoryBuffer();
 
             public IEnumerator<RawMessage> GetEnumerator()
             {
-                return ((IEnumerable<RawMessage>)_collection).GetEnumerator();
+                return _buffer.GetEnumerator();
             }
 
             IEnumerator IEnumerable.GetEnumerator()
@@ -140,31 +137,26 @@ namespace RabbitMqBrokerTests
 
             public void Dispose()
             {
-                Dispose(true);
-                GC.SuppressFinalize(this);
-            }
-        
-            protected virtual void Dispose(bool disposing)
-            {
-                if (_disposed || !disposing)
-                    return; 
-            
-                _collection.Dispose();
-            
-                _disposed = true;
+                _buffer.Dispose();
             }
 
-            public int Count => _collection.Count;
+            public int Count => _buffer.Count;
 
             public void Enqueue(RawMessage message, CancellationToken cancelationToken)
             {
-                _collection.Add(message);
+                _buffer.Enqueue(message, cancelationToken);
             }
 
-            public RawMessage Dequeue(CancellationToken cancelationToken)
+            public void Dequeue(CancellationToken cancelationToken)
             {
-                Gate.Wait();
-                return _collection.Take(cancelationToken);
+                _buffer.Dequeue(cancelationToken);
+            }
+            
+            [CanBeNull]
+            public RawMessage WaitOneAndPeek(CancellationToken cancelationToken)
+            {
+                Gate.Wait( cancelationToken);
+                return _buffer.WaitOneAndPeek( cancelationToken);
             }
         }
     }
