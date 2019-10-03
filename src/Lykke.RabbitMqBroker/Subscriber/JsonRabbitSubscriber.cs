@@ -19,6 +19,7 @@ namespace Lykke.RabbitMqBroker.Subscriber
         private readonly string _queueName;
         private readonly bool _isDurable;
         private readonly ILogFactory _logFactory;
+        private readonly ushort _prefetchCount;
 
         private RabbitMqSubscriber<TMessage> _subscriber;
 
@@ -32,6 +33,7 @@ namespace Lykke.RabbitMqBroker.Subscriber
                 exchangeName,
                 queueName,
                 true,
+                100,
                 logFactory)
         {
         }
@@ -42,11 +44,29 @@ namespace Lykke.RabbitMqBroker.Subscriber
             string queueName,
             bool isDurable,
             ILogFactory logFactory)
+            : this(
+                connectionString,
+                exchangeName,
+                queueName,
+                isDurable,
+                100,
+                logFactory)
+        {
+        }
+
+        protected JsonRabbitSubscriber(
+            string connectionString,
+            string exchangeName,
+            string queueName,
+            bool isDurable,
+            ushort prefetchCount,
+            ILogFactory logFactory)
         {
             _connectionString = connectionString ?? throw new ArgumentNullException(nameof(connectionString));
             _exchangeName = exchangeName ?? throw new ArgumentNullException(nameof(exchangeName));
             _queueName = queueName ?? throw new ArgumentNullException(nameof(queueName));
             _isDurable = isDurable;
+            _prefetchCount = prefetchCount;
             _logFactory = logFactory ?? throw new ArgumentNullException(nameof(logFactory));
         }
 
@@ -68,6 +88,7 @@ namespace Lykke.RabbitMqBroker.Subscriber
                         rabbitMqSubscriptionSettings,
                         TimeSpan.FromSeconds(10)))
                 .SetMessageDeserializer(new JsonMessageDeserializer<TMessage>())
+                .SetPrefetchCount(_prefetchCount)
                 .Subscribe(ProcessMessageAsync)
                 .CreateDefaultBinding()
                 .Start();
