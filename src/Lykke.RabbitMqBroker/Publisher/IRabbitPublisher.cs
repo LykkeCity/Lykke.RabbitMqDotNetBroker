@@ -1,7 +1,6 @@
 ﻿using System.Threading.Tasks;
-using Autofac;
-using Common;
 using JetBrains.Annotations;
+using Lykke.Common;
 
 namespace Lykke.RabbitMqBroker.Publisher
 {
@@ -9,7 +8,7 @@ namespace Lykke.RabbitMqBroker.Publisher
     /// Interface for rabbitMq message publisher.
     /// </summary>
     [PublicAPI]
-    public interface IRabbitPublisher<in TMessage> : IStartable, IStopable
+    public interface IRabbitPublisher<in TMessage> : IStartStop
     {
         /// <summary>
         /// Publishes a message to rabbitMq exchange.

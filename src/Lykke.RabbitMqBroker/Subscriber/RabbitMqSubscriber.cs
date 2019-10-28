@@ -5,24 +5,25 @@ using System;
 using System.Text;
 using System.Threading.Tasks;
 using System.Threading;
+using Autofac;
+using Common;
+using Common.Log;
+using JetBrains.Annotations;
+using Lykke.Common;
+using Lykke.Common.Log;
+using Lykke.RabbitMqBroker.Deduplication;
 using Microsoft.Extensions.PlatformAbstractions;
 using Microsoft.ApplicationInsights;
 using Microsoft.ApplicationInsights.DataContracts;
 using Microsoft.ApplicationInsights.Extensibility;
-using Autofac;
+using Newtonsoft.Json;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
-using Common;
-using Common.Log;
-using JetBrains.Annotations;
-using Lykke.Common.Log;
-using Lykke.RabbitMqBroker.Deduplication;
-using Newtonsoft.Json;
 
 namespace Lykke.RabbitMqBroker.Subscriber
 {
     [PublicAPI]
-    public class RabbitMqSubscriber<TTopicModel> : IStartable, IStopable, IMessageConsumer<TTopicModel>
+    public class RabbitMqSubscriber<TTopicModel> : IStartStop, IMessageConsumer<TTopicModel>
     {
         private const string TelemetryType = "RabbitMq Subscriber";
 

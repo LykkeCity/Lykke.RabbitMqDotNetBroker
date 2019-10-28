@@ -5,11 +5,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Lykke.Common" Version="7.0.4" />
-    <PackageReference Include="RabbitMQ.Client" Version="4.1.1" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\Lykke.RabbitMqBroker\Lykke.RabbitMqBroker.csproj" />
   </ItemGroup>
 
