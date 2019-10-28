@@ -6,11 +6,9 @@
     <PackageReference Include="Castle.Core" Version="4.3.1" />
     <PackageReference Include="Lykke.Logs" Version="5.1.1" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.8.0" />
-    <PackageReference Include="Lykke.Common" Version="7.0.4" />
     <PackageReference Include="NSubstitute" Version="3.1.0" />
     <PackageReference Include="NUnit" Version="3.10.1" />
     <PackageReference Include="NUnit3TestAdapter" Version="3.10.0" />
-    <PackageReference Include="RabbitMQ.Client" Version="4.1.1" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\Lykke.RabbitMqBroker\Lykke.RabbitMqBroker.csproj" />

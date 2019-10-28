@@ -10,6 +10,7 @@ using Autofac;
 using Common;
 using Common.Log;
 using JetBrains.Annotations;
+using Lykke.Common;
 using Lykke.Common.Log;
 using Lykke.RabbitMqBroker.Publisher.DeferredMessages;
 using Lykke.RabbitMqBroker.Subscriber;
@@ -17,10 +18,7 @@ using Lykke.RabbitMqBroker.Subscriber;
 namespace Lykke.RabbitMqBroker.Publisher
 {
     [PublicAPI]
-    public class RabbitMqPublisher<TMessageModel> :
-        IMessageProducer<TMessageModel>,
-        IStartable,
-        IStopable
+    public class RabbitMqPublisher<TMessageModel> : IStartStop, IMessageProducer<TMessageModel>
     {
         public string Name => _settings.GetPublisherName();
 

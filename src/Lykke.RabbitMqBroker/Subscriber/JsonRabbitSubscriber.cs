@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using Autofac;
 using Common;
 using JetBrains.Annotations;
+using Lykke.Common;
 using Lykke.Common.Log;
 
 namespace Lykke.RabbitMqBroker.Subscriber
@@ -12,7 +13,7 @@ namespace Lykke.RabbitMqBroker.Subscriber
     /// </summary>
     /// <typeparam name="TMessage">Message type.</typeparam>
     [PublicAPI]
-    public abstract class JsonRabbitSubscriber<TMessage> : IStartable, IStopable
+    public abstract class JsonRabbitSubscriber<TMessage> : IStartStop
     {
         private readonly string _connectionString;
         private readonly string _exchangeName;
