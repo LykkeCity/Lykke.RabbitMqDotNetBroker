@@ -30,7 +30,7 @@
     <PackageReference Include="JetBrains.Annotations" Version="11.1.0" />
     <PackageReference Include="Lykke.Common" Version="7.5.0" />
     <PackageReference Include="Lykke.SettingsReader" Version="2.4.1" />
-    <PackageReference Include="MessagePack" Version="1.7.3.4" />
+    <PackageReference Include="MessagePack" Version="1.9.3" />
     <PackageReference Include="Microsoft.ApplicationInsights" Version="2.6.4" />
     <PackageReference Include="protobuf-net" Version="2.3.13" />
     <PackageReference Include="RabbitMQ.Client" Version="4.1.1" />
