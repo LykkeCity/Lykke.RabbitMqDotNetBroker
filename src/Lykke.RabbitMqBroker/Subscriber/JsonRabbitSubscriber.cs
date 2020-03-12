@@ -87,7 +87,8 @@ namespace Lykke.RabbitMqBroker.Subscriber
                     new ResilientErrorHandlingStrategy(
                         _logFactory,
                         rabbitMqSubscriptionSettings,
-                        TimeSpan.FromSeconds(10)))
+                        TimeSpan.FromSeconds(10),
+                        next: new DeadQueueErrorHandlingStrategy(_logFactory, rabbitMqSubscriptionSettings)))
                 .SetMessageDeserializer(new JsonMessageDeserializer<TMessage>())
                 .SetPrefetchCount(_prefetchCount)
                 .Subscribe(ProcessMessageAsync)
