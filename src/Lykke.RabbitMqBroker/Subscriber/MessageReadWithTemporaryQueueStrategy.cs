@@ -36,7 +36,10 @@ namespace Lykke.RabbitMqBroker.Subscriber
                 {
                     { "x-dead-letter-exchange", settings.DeadLetterExchangeName }
                 };
-                channel.ExchangeDeclare(settings.DeadLetterExchangeName, "direct", durable: true);
+                var exchangeType = string.IsNullOrWhiteSpace(settings.RoutingKey)
+                    ? "fanout"
+                    : "direct";
+                channel.ExchangeDeclare(settings.DeadLetterExchangeName, exchangeType, durable: true);
                 channel.QueueDeclare(poisonQueueName, durable: settings.IsDurable, exclusive: false, autoDelete: false);
                 channel.QueueBind(poisonQueueName, settings.DeadLetterExchangeName, settings.RoutingKey ?? string.Empty);
             }
