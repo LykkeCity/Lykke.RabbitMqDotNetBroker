@@ -171,7 +171,7 @@ namespace Lykke.RabbitMqBroker.Subscriber
             return _cancellationTokenSource == null || _cancellationTokenSource.IsCancellationRequested;
         }
 
-        private async void ReadThread(object parameter)
+        private void ReadThread(object parameter)
         {
             var settings = (RabbitMqSubscriptionSettings)parameter;
             while (!IsStopped())
@@ -180,7 +180,7 @@ namespace Lykke.RabbitMqBroker.Subscriber
                 {
                     try
                     {
-                        ConnectAndReadAsync(settings);
+                        ConnectAndRead(settings);
                     }
                     catch (Exception ex)
                     {
@@ -192,8 +192,8 @@ namespace Lykke.RabbitMqBroker.Subscriber
                         }
 
                         _reconnectionsInARowCount++;
-
-                        await Task.Delay(settings.ReconnectionDelay, _cancellationTokenSource.Token);
+                        
+                        Thread.Sleep(settings.ReconnectionDelay);
                     }
                 }
                 // Saves the loop if nothing didn't help
@@ -206,16 +206,16 @@ namespace Lykke.RabbitMqBroker.Subscriber
             _log.WriteInfo(nameof(ReadThread), settings.GetSubscriberName(), "Subscriber is stopped");
         }
 
-        private void ConnectAndReadAsync(RabbitMqSubscriptionSettings settings)
+        private void ConnectAndRead(RabbitMqSubscriptionSettings settings)
         {
             var factory = new ConnectionFactory { Uri = settings.ConnectionString };
-            _log.WriteInfo(nameof(ConnectAndReadAsync), settings.GetSubscriberName(), $"Trying to connect to {factory.Endpoint} ({_exchangeQueueName})");
+            _log.WriteInfo(nameof(ConnectAndRead), settings.GetSubscriberName(), $"Trying to connect to {factory.Endpoint} ({_exchangeQueueName})");
 
             var cn = $"[Sub] {PlatformServices.Default.Application.ApplicationName} {PlatformServices.Default.Application.ApplicationVersion} to {_exchangeQueueName}";
             using (var connection = factory.CreateConnection(cn))
             using (var channel = connection.CreateModel())
             {
-                _log.WriteInfo(nameof(ConnectAndReadAsync), settings.GetSubscriberName(), $"Connected to {factory.Endpoint} ({_exchangeQueueName})");
+                _log.WriteInfo(nameof(ConnectAndRead), settings.GetSubscriberName(), $"Connected to {factory.Endpoint} ({_exchangeQueueName})");
 
                 if (_prefetchCount.HasValue)
                     channel.BasicQos(0, _prefetchCount.Value, false);
@@ -365,7 +365,7 @@ namespace Lykke.RabbitMqBroker.Subscriber
             if (_thread != null) return this;
 
             _reconnectionsInARowCount = 0;
-
+            
             _thread = new Thread(ReadThread);
             _thread.Start(_settings);
 

@@ -250,7 +250,7 @@ namespace Lykke.RabbitMqBroker.Publisher
             }
         }
 
-        private async void ConnectionThread()
+        private void ConnectionThread()
         {
             while (!IsStopped())
             {
@@ -275,7 +275,7 @@ namespace Lykke.RabbitMqBroker.Publisher
 
                         _reconnectionsInARowCount++;
 
-                        await Task.Delay(_settings.ReconnectionDelay, _cancellationTokenSource.Token);
+                        Thread.Sleep(_settings.ReconnectionDelay);
                     }
                 }
                 // ReSharper disable once EmptyGeneralCatchClause
