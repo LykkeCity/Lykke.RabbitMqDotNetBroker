@@ -96,7 +96,7 @@ namespace RabbitMqBrokerTests
         
         private void PublishToQueue(string message)
         {
-            var factory = new ConnectionFactory { Uri = RabbitConnectionString };
+            var factory = new ConnectionFactory {Uri = new Uri(RabbitConnectionString, UriKind.Absolute)};
 
             using (var connection = factory.CreateConnection())
             using (var channel = connection.CreateModel())

@@ -48,7 +48,7 @@ namespace RabbitMqBrokerTests
                 RoutingKey = "RoutingKey"
             };
 
-            _factory = new ConnectionFactory { Uri = RabbitConnectionString };
+            _factory = new ConnectionFactory {Uri = new Uri(RabbitConnectionString, UriKind.Absolute)};
 
             EnsureRabbitInstalledAndRun();
         }
