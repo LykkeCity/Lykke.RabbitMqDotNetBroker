@@ -64,7 +64,7 @@ namespace Lykke.RabbitMqBroker.Tests
 
             // act
             {
-                var factory = new ConnectionFactory { Uri = ConnectionString };
+                var factory = new ConnectionFactory {Uri = new Uri(ConnectionString, UriKind.Absolute)};
                 using (var connection = factory.CreateConnection())
                 using (var channel = connection.CreateModel())
                 {
@@ -74,7 +74,7 @@ namespace Lykke.RabbitMqBroker.Tests
                 }
             }
             {
-                var factory = new ConnectionFactory { Uri = AlternativeConnectionString };
+                var factory = new ConnectionFactory {Uri = new Uri(AlternativeConnectionString, UriKind.Absolute)};
                 using (var connection = factory.CreateConnection())
                 using (var channel = connection.CreateModel())
                 {
@@ -121,7 +121,7 @@ namespace Lykke.RabbitMqBroker.Tests
 
             // act
             {
-                var factory = new ConnectionFactory { Uri = AlternativeConnectionString };
+                var factory = new ConnectionFactory {Uri = new Uri(AlternativeConnectionString, UriKind.Absolute)};
                 using (var connection = factory.CreateConnection())
                 using (var channel = connection.CreateModel())
                 {
