@@ -5,7 +5,7 @@ using System;
 using System.Collections.Generic;
 using RabbitMQ.Client;
 
-namespace Lykke.RabbitMqBroker.Subscriber
+namespace Lykke.RabbitMqBroker.Subscriber.Strategies
 {
     public class MessageReadWithTemporaryQueueStrategy : IMessageReadStrategy
     {

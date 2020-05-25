@@ -8,19 +8,20 @@ using System.Net.Http.Headers;
 using System.Text;
 using Newtonsoft.Json;
 
-namespace RabbitMqBrokerTests
+namespace Lykke.RabbitMqBroker.Tests.Utils
 {
     public sealed class RabbitManagementClient : IRabbitManagementClient
     {
         private readonly HttpClient _client;
-        
+
         public RabbitManagementClient(string rabbitUrl, string user, string password)
         {
             _client = new HttpClient
             {
                 BaseAddress = new Uri(rabbitUrl)
             };
-            _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(Encoding.ASCII.GetBytes($"{user}:{password}")));
+            _client.DefaultRequestHeaders.Authorization =
+                new AuthenticationHeaderValue("Basic", Convert.ToBase64String(Encoding.ASCII.GetBytes($"{user}:{password}")));
         }
 
         public IReadOnlyCollection<Vhost> GetVhosts()
@@ -40,12 +41,13 @@ namespace RabbitMqBrokerTests
         {
             var result = _client.PutAsync($"/api/vhosts/{name}", null).Result;
             result.EnsureSuccessStatusCode();
-
         }
 
         public void SetFullPermissions(string vhost, string user)
         {
-            var result = _client.PutAsync($"/api/permissions/{vhost}/{user}", new StringContent("{\"configure\":\".*\",\"write\":\".*\",\"read\":\".*\"}", Encoding.UTF8, "application/json")).Result;
+            var result = _client.PutAsync(
+                $"/api/permissions/{vhost}/{user}",
+                new StringContent("{\"configure\":\".*\",\"write\":\".*\",\"read\":\".*\"}", Encoding.UTF8, "application/json")).Result;
             result.EnsureSuccessStatusCode();
         }
     }

@@ -1,23 +1,19 @@
 ﻿// Copyright (c) Lykke Corp.
 // Licensed under the MIT License. See the LICENSE file in the project root for more information.
 
+using System;
 using System.Threading.Tasks;
-using Common;
-using Lykke.Logs;
 using Lykke.RabbitMqBroker.Publisher;
+using Lykke.RabbitMqBroker.Publisher.Serializers;
+using Lykke.RabbitMqBroker.Publisher.Strategies;
+using Microsoft.Extensions.Logging.Abstractions;
+using Newtonsoft.Json;
+using NSubstitute;
 using NUnit.Framework;
+using RabbitMQ.Client;
 
-namespace RabbitMqBrokerTests
+namespace Lykke.RabbitMqBroker.Tests
 {
-    using System;
-    using Lykke.RabbitMqBroker;
-    using Lykke.RabbitMqBroker.Subscriber;
-
-    using Newtonsoft.Json;
-
-    using NSubstitute;
-    using RabbitMQ.Client;
-
     [TestFixture(Category = "Integration"), Explicit]
     public class SyncPublisherTest : RabbitMqPublisherSubscriberBaseTest
     {
@@ -26,7 +22,7 @@ namespace RabbitMqBrokerTests
         [SetUp]
         public void SetUp()
         {
-            _publisher = new RabbitMqPublisher<string>(EmptyLogFactory.Instance, _settings);
+            _publisher = new RabbitMqPublisher<string>(new NullLoggerFactory(), _settings);
 
             _publisher
                 .SetPublishStrategy(new DefaultFanoutPublishStrategy(_settings))
@@ -37,7 +33,7 @@ namespace RabbitMqBrokerTests
         [TearDown]
         public void TearDown()
         {
-            ((IStopable)_publisher).Stop();
+            _publisher.Stop();
         }
 
         [Test]
@@ -58,7 +54,7 @@ namespace RabbitMqBrokerTests
         [Test]
         public void ShouldNotPublishNonSeriazableMessage()
         {
-            var publisher = new RabbitMqPublisher<ComplexType>(EmptyLogFactory.Instance, _settings);
+            var publisher = new RabbitMqPublisher<ComplexType>(new NullLoggerFactory(), _settings);
 
             publisher
                 .SetPublishStrategy(new DefaultFanoutPublishStrategy(_settings))

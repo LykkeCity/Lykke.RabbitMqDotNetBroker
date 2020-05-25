@@ -2,9 +2,8 @@
 // Licensed under the MIT License. See the LICENSE file in the project root for more information.
 
 using System.Text;
-using Lykke.RabbitMqBroker.Subscriber;
 
-namespace Lykke.RabbitMqBroker
+namespace Lykke.RabbitMqBroker.Subscriber.Deserializers
 {
     public class DefaultStringDeserializer : IMessageDeserializer<string>
     {

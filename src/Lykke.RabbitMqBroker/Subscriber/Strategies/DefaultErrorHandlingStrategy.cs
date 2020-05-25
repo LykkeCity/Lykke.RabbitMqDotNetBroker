@@ -3,39 +3,24 @@
 
 using System;
 using System.Threading;
-using Common.Log;
 using JetBrains.Annotations;
-using Lykke.Common.Log;
-using Lykke.RabbitMqBroker.Subscriber;
+using Microsoft.Extensions.Logging;
 
-namespace Lykke.RabbitMqBroker
+namespace Lykke.RabbitMqBroker.Subscriber.Strategies
 {
     [PublicAPI]
     public sealed class DefaultErrorHandlingStrategy : IErrorHandlingStrategy
     {
-        private readonly ILog _log;
+        private readonly ILogger<DefaultErrorHandlingStrategy> _logger;
         private readonly RabbitMqSubscriptionSettings _settings;
         private readonly IErrorHandlingStrategy _next;
 
-        [Obsolete]
-        public DefaultErrorHandlingStrategy(ILog log, RabbitMqSubscriptionSettings settings, IErrorHandlingStrategy next = null)
-        {
-            _log = log ?? throw new ArgumentNullException(nameof(log));
-            _settings = settings ?? throw new ArgumentNullException(nameof(settings));
-            _next = next;
-        }
-
         public DefaultErrorHandlingStrategy(
-            [NotNull] ILogFactory logFactory, 
-            [NotNull] RabbitMqSubscriptionSettings settings, 
+            [NotNull] ILogger<DefaultErrorHandlingStrategy> logger,
+            [NotNull] RabbitMqSubscriptionSettings settings,
             IErrorHandlingStrategy next = null)
         {
-            if (logFactory == null)
-            {
-                throw new ArgumentNullException(nameof(logFactory));
-            }
-
-            _log = logFactory.CreateLog(this);
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             _next = next;
         }
@@ -50,7 +35,7 @@ namespace Lykke.RabbitMqBroker
             catch (Exception ex)
             {
                 // ReSharper disable once MethodSupportsCancellation
-                _log.WriteErrorAsync(_settings.GetSubscriberName(), "Message handling", _settings.GetSubscriberName(), ex).GetAwaiter().GetResult();
+                _logger.LogError(ex, _settings.GetSubscriberName());
                 if (_next == null)
                 {
                     ma.Accept();

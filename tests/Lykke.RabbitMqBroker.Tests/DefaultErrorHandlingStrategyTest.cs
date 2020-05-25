@@ -3,13 +3,12 @@
 
 using System;
 using System.Threading;
-using Lykke.Logs;
-using Lykke.RabbitMqBroker;
-using Lykke.RabbitMqBroker.Subscriber;
+using Lykke.RabbitMqBroker.Subscriber.Strategies;
+using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using NUnit.Framework;
 
-namespace RabbitMqBrokerTests
+namespace Lykke.RabbitMqBroker.Tests
 {
     [TestFixture]
     public class DefaultErrorHandlingStrategyTest
@@ -24,7 +23,7 @@ namespace RabbitMqBrokerTests
             {
                 QueueName = "QueueName"
             };
-            _strategy = new DefaultErrorHandlingStrategy(EmptyLogFactory.Instance, _settings);
+            _strategy = new DefaultErrorHandlingStrategy(new NullLogger<DefaultErrorHandlingStrategy>(), _settings);
         }
 
         [Test]
@@ -41,7 +40,7 @@ namespace RabbitMqBrokerTests
         public void ShouldResendToNextHandlerOnError()
         {
             var nextHandler = Substitute.For<IErrorHandlingStrategy>();
-            _strategy = new DefaultErrorHandlingStrategy(EmptyLogFactory.Instance, _settings, nextHandler);
+            _strategy = new DefaultErrorHandlingStrategy(new NullLogger<DefaultErrorHandlingStrategy>(), _settings, nextHandler);
 
             var handler = new Action(() => throw new Exception());
             var acceptor = Substitute.For<IMessageAcceptor>();
@@ -52,6 +51,3 @@ namespace RabbitMqBrokerTests
         }
     }
 }
-
-
-

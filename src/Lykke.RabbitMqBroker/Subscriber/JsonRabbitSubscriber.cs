@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Threading.Tasks;
 using Autofac;
-using Common;
 using JetBrains.Annotations;
-using Lykke.Common;
-using Lykke.Common.Log;
+using Lykke.RabbitMqBroker.Subscriber.Deserializers;
+using Lykke.RabbitMqBroker.Subscriber.Strategies;
+using Microsoft.Extensions.Logging;
 
 namespace Lykke.RabbitMqBroker.Subscriber
 {
@@ -15,24 +15,17 @@ namespace Lykke.RabbitMqBroker.Subscriber
     [PublicAPI]
     public abstract class JsonRabbitSubscriber<TMessage> : IStartStop
     {
-        private readonly string _connectionString;
-        private readonly string _exchangeName;
-        private readonly string _queueName;
-        private readonly bool _isDurable;
-        private readonly ILogFactory _logFactory;
+        private readonly RabbitMqSubscriptionSettings _settings;
+        private readonly ILoggerFactory _loggerFactory;
         private readonly ushort _prefetchCount;
 
         private RabbitMqSubscriber<TMessage> _subscriber;
 
         protected JsonRabbitSubscriber(
-            string connectionString,
-            string exchangeName,
-            string queueName,
-            ILogFactory logFactory)
+            RabbitMqSubscriptionSettings settings,
+            ILoggerFactory logFactory)
             : this(
-                connectionString,
-                exchangeName,
-                queueName,
+                settings,
                 true,
                 100,
                 logFactory)
@@ -40,15 +33,11 @@ namespace Lykke.RabbitMqBroker.Subscriber
         }
 
         protected JsonRabbitSubscriber(
-            string connectionString,
-            string exchangeName,
-            string queueName,
+            RabbitMqSubscriptionSettings settings,
             bool isDurable,
-            ILogFactory logFactory)
+            ILoggerFactory logFactory)
             : this(
-                connectionString,
-                exchangeName,
-                queueName,
+                settings,
                 isDurable,
                 100,
                 logFactory)
@@ -56,39 +45,30 @@ namespace Lykke.RabbitMqBroker.Subscriber
         }
 
         protected JsonRabbitSubscriber(
-            string connectionString,
-            string exchangeName,
-            string queueName,
+            RabbitMqSubscriptionSettings settings,
             bool isDurable,
             ushort prefetchCount,
-            ILogFactory logFactory)
+            ILoggerFactory logFactory)
         {
-            _connectionString = connectionString ?? throw new ArgumentNullException(nameof(connectionString));
-            _exchangeName = exchangeName ?? throw new ArgumentNullException(nameof(exchangeName));
-            _queueName = queueName ?? throw new ArgumentNullException(nameof(queueName));
-            _isDurable = isDurable;
+            _settings = settings ?? throw new ArgumentNullException(nameof(settings));
+            if (isDurable)
+                _settings = _settings.MakeDurable();
             _prefetchCount = prefetchCount;
-            _logFactory = logFactory ?? throw new ArgumentNullException(nameof(logFactory));
+            _loggerFactory = logFactory ?? throw new ArgumentNullException(nameof(logFactory));
         }
 
         /// <inheritdoc cref="IStartable.Start"/>
         public void Start()
         {
-            var rabbitMqSubscriptionSettings = RabbitMqSubscriptionSettings.ForSubscriber(
-                _connectionString,
-                _exchangeName,
-                _queueName);
-            if (_isDurable)
-                rabbitMqSubscriptionSettings = rabbitMqSubscriptionSettings.MakeDurable();
-
             _subscriber = new RabbitMqSubscriber<TMessage>(
-                    _logFactory,
-                    rabbitMqSubscriptionSettings,
+                    _loggerFactory.CreateLogger<RabbitMqSubscriber<TMessage>>(),
+                    _settings,
                     new ResilientErrorHandlingStrategy(
-                        _logFactory,
-                        rabbitMqSubscriptionSettings,
+                        _loggerFactory.CreateLogger<ResilientErrorHandlingStrategy>(),
+                        _settings,
                         TimeSpan.FromSeconds(10),
-                        next: new DeadQueueErrorHandlingStrategy(_logFactory, rabbitMqSubscriptionSettings)))
+                        next: new DeadQueueErrorHandlingStrategy(
+                            _loggerFactory.CreateLogger<DeadQueueErrorHandlingStrategy>(), _settings)))
                 .SetMessageDeserializer(new JsonMessageDeserializer<TMessage>())
                 .SetPrefetchCount(_prefetchCount)
                 .Subscribe(ProcessMessageAsync)
@@ -96,7 +76,7 @@ namespace Lykke.RabbitMqBroker.Subscriber
                 .Start();
         }
 
-        /// <inheritdoc cref="IStopable.Stop"/>
+        /// <inheritdoc cref="IStartStop.Stop"/>
         public void Stop()
         {
             if (_subscriber != null)

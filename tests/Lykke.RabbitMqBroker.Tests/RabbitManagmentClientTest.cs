@@ -1,10 +1,11 @@
 ﻿// Copyright (c) Lykke Corp.
 // Licensed under the MIT License. See the LICENSE file in the project root for more information.
 
+using Lykke.RabbitMqBroker.Tests.Utils;
 using Newtonsoft.Json;
 using NUnit.Framework;
 
-namespace RabbitMqBrokerTests
+namespace Lykke.RabbitMqBroker.Tests
 {
     [TestFixture, Explicit("Only for manual testing. Doesn't perform correct cleanup")]
     public class RabbitManagmentClientTest
@@ -37,7 +38,6 @@ namespace RabbitMqBrokerTests
             client.SetFullPermissions("MyHost", "guest");
         }
     }
-
 
     public sealed class Vhost
     {

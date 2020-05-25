@@ -5,7 +5,7 @@ using System.IO;
 using JetBrains.Annotations;
 using MessagePack;
 
-namespace Lykke.RabbitMqBroker.Subscriber
+namespace Lykke.RabbitMqBroker.Subscriber.Deserializers
 {
     /// <summary>
     /// Uses MessagePack to deserialize the message

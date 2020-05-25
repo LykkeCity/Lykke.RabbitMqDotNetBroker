@@ -4,52 +4,27 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Common.Log;
 using JetBrains.Annotations;
-using Lykke.Common.Log;
-using Lykke.RabbitMqBroker.Subscriber;
+using Microsoft.Extensions.Logging;
 
-namespace Lykke.RabbitMqBroker
+namespace Lykke.RabbitMqBroker.Subscriber.Strategies
 {
     [PublicAPI]
     public sealed class ResilientErrorHandlingStrategy : IErrorHandlingStrategy
     {
-        private readonly ILog _log;
+        private readonly ILogger<ResilientErrorHandlingStrategy> _logger;
         private readonly RabbitMqSubscriptionSettings _settings;
         private readonly TimeSpan _retryTimeout;
         private readonly int _retryNum;
         private readonly IErrorHandlingStrategy _next;
 
-        [Obsolete]
-        public ResilientErrorHandlingStrategy(ILog log, RabbitMqSubscriptionSettings settings, TimeSpan retryTimeout, int retryNum = 5, IErrorHandlingStrategy next = null)
-        {
-            if (log == null)
-            {
-                throw new ArgumentNullException(nameof(log));
-            }
-            if (settings == null)
-            {
-                throw new ArgumentNullException(nameof(settings));
-            }
-
-            _log = log;
-            _settings = settings;
-            _retryTimeout = retryTimeout;
-            _retryNum = retryNum;
-            _next = next;
-        }
-
         public ResilientErrorHandlingStrategy(
-            [NotNull] ILogFactory logFactory, 
-            [NotNull] RabbitMqSubscriptionSettings settings, 
-            TimeSpan retryTimeout, 
-            int retryNum = 5, 
+            [NotNull] ILogger<ResilientErrorHandlingStrategy> logger,
+            [NotNull] RabbitMqSubscriptionSettings settings,
+            TimeSpan retryTimeout,
+            int retryNum = 5,
             IErrorHandlingStrategy next = null)
         {
-            if (logFactory == null)
-            {
-                throw new ArgumentNullException(nameof(logFactory));
-            }
             if (retryTimeout <= TimeSpan.Zero)
             {
                 throw new ArgumentOutOfRangeException(nameof(retryTimeout), retryTimeout, "Should be positive time span");
@@ -59,7 +34,7 @@ namespace Lykke.RabbitMqBroker
                 throw new ArgumentOutOfRangeException(nameof(retryNum), retryNum, "Should be positive number");
             }
 
-            _log = logFactory.CreateLog(this);
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             _retryTimeout = retryTimeout;
             _retryNum = retryNum;
@@ -79,12 +54,8 @@ namespace Lykke.RabbitMqBroker
                 // Message processing is failed, entering to the retries
 
                 // ReSharper disable once MethodSupportsCancellation
-                _log.WriteWarningAsync(
-                        nameof(ResilientErrorHandlingStrategy),
-                        _settings.GetSubscriberName(),
-                        "Message handling",
-                        $"Failed to handle the message for the first time. Retry in {_retryTimeout.Seconds} sec. Exception {ex}")
-                    .GetAwaiter().GetResult();
+                _logger.LogWarning(
+                    $"Failed to handle the message from {_settings.GetSubscriberName()} for the first time. Retry in {_retryTimeout.Seconds} sec. Exception {ex}");
 
                 // Retries loop
 
@@ -106,12 +77,8 @@ namespace Lykke.RabbitMqBroker
                     catch (Exception ex2)
                     {
                         // ReSharper disable once MethodSupportsCancellation
-                        _log.WriteWarningAsync(
-                                nameof(ResilientErrorHandlingStrategy),
-                                _settings.GetSubscriberName(),
-                                "Message handling",
-                                $"Failed to handle the message for the {i + 1} time. Retry in {_retryTimeout.Seconds} sec. Exception {ex2}")
-                            .GetAwaiter().GetResult();
+                        _logger.LogWarning(
+                            $"Failed to handle the message from {_settings.GetSubscriberName()} for the {i + 1} time. Retry in {_retryTimeout.Seconds} sec. Exception {ex2}");
                     }
                 }
 
@@ -121,9 +88,9 @@ namespace Lykke.RabbitMqBroker
 
                 if (_next == null)
                 {
-                    // Swallow the message if no more strategy is chained
+                    // Reject the message if no more strategy is chained
 
-                    ma.Accept();
+                    ma.Reject();
                 }
                 else
                 {

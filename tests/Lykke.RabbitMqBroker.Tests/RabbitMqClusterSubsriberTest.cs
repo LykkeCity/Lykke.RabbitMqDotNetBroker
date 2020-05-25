@@ -5,10 +5,11 @@ using System;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Common;
-using Lykke.Logs;
 using Lykke.RabbitMqBroker.Deduplication;
 using Lykke.RabbitMqBroker.Subscriber;
+using Lykke.RabbitMqBroker.Subscriber.Deserializers;
+using Lykke.RabbitMqBroker.Subscriber.Strategies;
+using Microsoft.Extensions.Logging.Abstractions;
 using NUnit.Framework;
 using RabbitMQ.Client;
 
@@ -28,11 +29,6 @@ namespace Lykke.RabbitMqBroker.Tests
         private RabbitMqSubscriber<string> _subscriber;
         private int _messagesCount;
 
-        [SetUp]
-        public void SetUp()
-        {
-        }
-
         [Test]
         public void ReceivingAndDeduplicationMessagesFromBothExchanges()
         {
@@ -45,9 +41,9 @@ namespace Lykke.RabbitMqBroker.Tests
                 QueueName = QueueName
             };
             _subscriber = new RabbitMqSubscriber<string>(
-                    EmptyLogFactory.Instance,
+                    new NullLogger<RabbitMqSubscriber<string>>(),
                     settings,
-                    new DefaultErrorHandlingStrategy(EmptyLogFactory.Instance, settings))
+                    new DefaultErrorHandlingStrategy(new NullLogger<DefaultErrorHandlingStrategy>(), settings))
                 .SetMessageDeserializer(new DefaultStringDeserializer())
                 .SetMessageReadStrategy(new MessageReadQueueStrategy())
                 .SetAlternativeExchange(AlternativeConnectionString)
@@ -102,9 +98,9 @@ namespace Lykke.RabbitMqBroker.Tests
                 QueueName = QueueName
             };
             _subscriber = new RabbitMqSubscriber<string>(
-                    EmptyLogFactory.Instance,
+                    new NullLogger<RabbitMqSubscriber<string>>(), 
                     settings,
-                    new DefaultErrorHandlingStrategy(EmptyLogFactory.Instance, settings))
+                    new DefaultErrorHandlingStrategy(new NullLogger<DefaultErrorHandlingStrategy>(), settings))
                 .SetMessageDeserializer(new DefaultStringDeserializer())
                 .SetMessageReadStrategy(new MessageReadQueueStrategy())
                 .SetAlternativeExchange(AlternativeConnectionString)
@@ -140,7 +136,7 @@ namespace Lykke.RabbitMqBroker.Tests
         [TearDown]
         public void TearDown()
         {
-            ((IStopable)_subscriber).Stop();
+            _subscriber.Stop();
         }
     }
 }

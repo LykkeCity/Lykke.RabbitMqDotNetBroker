@@ -4,7 +4,7 @@
 using JetBrains.Annotations;
 using RabbitMQ.Client;
 
-namespace Lykke.RabbitMqBroker.Subscriber
+namespace Lykke.RabbitMqBroker.Subscriber.Strategies
 {
     [PublicAPI]
     public interface IMessageReadStrategy

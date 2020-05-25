@@ -3,12 +3,12 @@
 
 using System.Threading;
 using System.Threading.Tasks;
-using Common;
-using Lykke.Logs;
 using Lykke.RabbitMqBroker.Publisher;
+using Lykke.RabbitMqBroker.Publisher.Strategies;
+using Microsoft.Extensions.Logging.Abstractions;
 using NUnit.Framework;
 
-namespace RabbitMqBrokerTests
+namespace Lykke.RabbitMqBroker.Tests
 {
     [TestFixture(Category = "Integration"), Explicit]
     internal sealed class AsyncPublisherTest : RabbitMqPublisherSubscriberBaseTest
@@ -18,7 +18,7 @@ namespace RabbitMqBrokerTests
         [SetUp]
         public void SetUp()
         {
-            _publisher = new RabbitMqPublisher<string>(EmptyLogFactory.Instance, _settings);
+            _publisher = new RabbitMqPublisher<string>(new NullLoggerFactory(), _settings);
 
             _publisher
                 .SetPublishStrategy(new DefaultFanoutPublishStrategy(_settings))
@@ -118,7 +118,7 @@ namespace RabbitMqBrokerTests
         [TearDown]
         public void TearDown()
         {
-            ((IStopable)_publisher).Stop();
+            _publisher.Stop();
         }
     }
 }

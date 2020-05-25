@@ -5,7 +5,7 @@ using System.IO;
 using JetBrains.Annotations;
 using MessagePack;
 
-namespace Lykke.RabbitMqBroker.Publisher
+namespace Lykke.RabbitMqBroker.Publisher.Serializers
 {
     /// <summary>
     /// Uses MessagePack to serialize the message

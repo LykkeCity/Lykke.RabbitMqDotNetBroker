@@ -5,14 +5,14 @@ using System;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Common;
-using Lykke.Logs;
-using Lykke.RabbitMqBroker;
 using Lykke.RabbitMqBroker.Subscriber;
+using Lykke.RabbitMqBroker.Subscriber.Deserializers;
+using Lykke.RabbitMqBroker.Subscriber.Strategies;
+using Microsoft.Extensions.Logging.Abstractions;
 using NUnit.Framework;
 using RabbitMQ.Client;
 
-namespace RabbitMqBrokerTests
+namespace Lykke.RabbitMqBroker.Tests
 {
     [TestFixture(Category = "Integration")]
     [Explicit]
@@ -21,14 +21,13 @@ namespace RabbitMqBrokerTests
         private RabbitMqSubscriber<string> _subscriber;
 
         [SetUp]
-
         public void SetUp()
         {
             _subscriber = new RabbitMqSubscriber<string>(
-                    EmptyLogFactory.Instance, 
-                    _settings, 
-                    new DefaultErrorHandlingStrategy(EmptyLogFactory.Instance, _settings), 
-                    submitTelemetry: true)
+                    new NullLogger<RabbitMqSubscriber<string>>(),
+                    _settings,
+                    new DefaultErrorHandlingStrategy(new NullLogger<DefaultErrorHandlingStrategy>(), _settings),
+                    submitTelemetry: false)
                 .CreateDefaultBinding()
                 .SetMessageDeserializer(new DefaultStringDeserializer());
         }
@@ -61,9 +60,9 @@ namespace RabbitMqBrokerTests
         public void ShouldUseDeadLetterQueueOnException()
         {
             _subscriber = new RabbitMqSubscriber<string>(
-                    EmptyLogFactory.Instance,
-                    _settings, 
-                    new DeadQueueErrorHandlingStrategy(EmptyLogFactory.Instance, _settings))
+                    new NullLogger<RabbitMqSubscriber<string>>(),
+                    _settings,
+                    new DeadQueueErrorHandlingStrategy(new NullLogger<DeadQueueErrorHandlingStrategy>(), _settings))
                 .CreateDefaultBinding()
                 .SetMessageDeserializer(new DefaultStringDeserializer());
 
@@ -82,18 +81,18 @@ namespace RabbitMqBrokerTests
             _subscriber.Start();
 
             completeLock.Wait();
-            
+
             var result = ReadFromQueue(PoisonQueueName);
 
             Assert.That(result, Is.EqualTo(expected));
         }
-        
+
         [TearDown]
         public void TearDown()
         {
-            ((IStopable)_subscriber).Stop();
+            _subscriber.Stop();
         }
-        
+
         private void PublishToQueue(string message)
         {
             var factory = new ConnectionFactory {Uri = new Uri(RabbitConnectionString, UriKind.Absolute)};
@@ -105,7 +104,5 @@ namespace RabbitMqBrokerTests
                 channel.BasicPublish(_settings.ExchangeName, _settings.RoutingKey, body: body);
             }
         }
-
     }
 }
-

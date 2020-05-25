@@ -3,21 +3,24 @@
 
 using System;
 using System.Threading.Tasks;
-using Common.Log;
 using Lykke.RabbitMqBroker;
 using Lykke.RabbitMqBroker.Subscriber;
+using Lykke.RabbitMqBroker.Subscriber.Strategies;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace TestInvoke.SubscribeExample
 {
     public static class HowToSubscribe
     {
         private static RabbitMqSubscriber<string> _connector;
+
         public static void Example(RabbitMqSubscriptionSettings settings)
         {
-            var looger = new LogToConsole();
-
             _connector =
-                new RabbitMqSubscriber<string>(settings, new DefaultErrorHandlingStrategy(looger, settings))
+                new RabbitMqSubscriber<string>(
+                    new NullLogger<RabbitMqSubscriber<string>>(),
+                    settings,
+                    new DefaultErrorHandlingStrategy(new NullLogger<DefaultErrorHandlingStrategy>(), settings))
                   .SetMessageDeserializer(new TestMessageDeserializer())
                   .CreateDefaultBinding()
                   .Subscribe(HandleMessage)

@@ -2,15 +2,15 @@
 // Licensed under the MIT License. See the LICENSE file in the project root for more information.
 
 using System;
-using Lykke.Logs;
 using Lykke.RabbitMqBroker.Publisher;
-using Lykke.RabbitMqBroker.Subscriber;
+using Lykke.RabbitMqBroker.Publisher.Serializers;
+using Lykke.RabbitMqBroker.Publisher.Strategies;
+using Microsoft.Extensions.Logging.Abstractions;
+using NSubstitute;
 using NUnit.Framework;
 
-namespace RabbitMqBrokerTests
+namespace Lykke.RabbitMqBroker.Tests
 {
-    using NSubstitute;
-
     [TestFixture]
     internal sealed class PublisherConfigurationTests
     {
@@ -29,7 +29,7 @@ namespace RabbitMqBrokerTests
                 RoutingKey = "RoutingKey"
             };
 
-            _publisher = new RabbitMqPublisher<string>(EmptyLogFactory.Instance, settings);
+            _publisher = new RabbitMqPublisher<string>(new NullLoggerFactory(), settings);
 
             _publisher
                 .SetPublishStrategy(new DefaultFanoutPublishStrategy(settings))

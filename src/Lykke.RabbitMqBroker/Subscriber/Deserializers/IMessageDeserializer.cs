@@ -3,7 +3,7 @@
 
 using JetBrains.Annotations;
 
-namespace Lykke.RabbitMqBroker.Subscriber
+namespace Lykke.RabbitMqBroker.Subscriber.Deserializers
 {
     [PublicAPI]
     public interface IMessageDeserializer<out TModel>

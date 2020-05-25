@@ -4,7 +4,7 @@
 using System.IO;
 using JetBrains.Annotations;
 
-namespace Lykke.RabbitMqBroker.Subscriber
+namespace Lykke.RabbitMqBroker.Subscriber.Deserializers
 {
     /// <summary>
     /// Uses Protobuf to deserialize the message

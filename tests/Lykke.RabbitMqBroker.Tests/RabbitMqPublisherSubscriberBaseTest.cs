@@ -2,17 +2,17 @@
 // Licensed under the MIT License. See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading;
 using JetBrains.Annotations;
 using Lykke.RabbitMqBroker.Publisher;
-using Lykke.RabbitMqBroker.Subscriber;
+using Lykke.RabbitMqBroker.Publisher.Serializers;
 using NUnit.Framework;
 using RabbitMQ.Client;
-using System.Collections;
-using System.Threading;
 
-namespace RabbitMqBrokerTests
+namespace Lykke.RabbitMqBroker.Tests
 {
     [TestFixture]
     public abstract class RabbitMqPublisherSubscriberBaseTest
@@ -25,7 +25,6 @@ namespace RabbitMqBrokerTests
         protected const string QueueName = "TestQueue";
         protected const string DeadLetterExchangeName = ExchangeName + "-DL";
         protected const string PoisonQueueName = QueueName + "-poison";
-
 
         protected class TestMessageSerializer : IRabbitMqSerializer<string>
         {
@@ -61,11 +60,10 @@ namespace RabbitMqBrokerTests
                 {
                 }
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 Assert.Inconclusive("The rabbitmq server either not installed or not started");
             }
-
         }
 
         protected string ReadFromQueue(string queueName = QueueName, bool ack = true)
@@ -123,7 +121,7 @@ namespace RabbitMqBrokerTests
         protected class TestBuffer : IPublisherBuffer
         {
             public readonly ManualResetEventSlim Gate = new ManualResetEventSlim(false);
-            private InMemoryBuffer _buffer = new InMemoryBuffer();
+            private readonly InMemoryBuffer _buffer = new InMemoryBuffer();
 
             public IEnumerator<RawMessage> GetEnumerator()
             {

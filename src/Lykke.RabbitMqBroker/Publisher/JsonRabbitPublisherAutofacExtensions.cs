@@ -1,6 +1,5 @@
 ﻿using System;
 using Autofac;
-using Common;
 using JetBrains.Annotations;
 
 namespace Lykke.RabbitMqBroker.Publisher
@@ -36,7 +35,7 @@ namespace Lykke.RabbitMqBroker.Publisher
             builder.RegisterType<JsonRabbitPublisher<TMessage>>()
                 .As<IRabbitPublisher<TMessage>>()
                 .As<IStartable>()
-                .As<IStopable>()
+                .As<IStartStop>()
                 .WithParameter("connectionString", rabbitMqConnString)
                 .WithParameter("exchangeName", exchangeName)
                 .SingleInstance();

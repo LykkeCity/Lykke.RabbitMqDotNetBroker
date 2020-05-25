@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Threading.Tasks;
 using Autofac;
-using Common;
 using JetBrains.Annotations;
-using Lykke.Common.Log;
-using Lykke.RabbitMqBroker.Subscriber;
+using Lykke.RabbitMqBroker.Publisher.Serializers;
+using Lykke.RabbitMqBroker.Publisher.Strategies;
+using Microsoft.Extensions.Logging;
 
 namespace Lykke.RabbitMqBroker.Publisher
 {
@@ -15,17 +15,17 @@ namespace Lykke.RabbitMqBroker.Publisher
     [PublicAPI]
     public class JsonRabbitPublisher<TMessage> : IRabbitPublisher<TMessage>
     {
-        private readonly ILogFactory _logFactory;
+        private readonly ILoggerFactory _loggerFactory;
         private readonly string _connectionString;
         private readonly string _exchangeName;
         private RabbitMqPublisher<TMessage> _rabbitMqPublisher;
 
         public JsonRabbitPublisher(
-            ILogFactory logFactory,
+            [NotNull] ILoggerFactory loggerFactory,
             string connectionString,
             string exchangeName)
         {
-            _logFactory = logFactory ?? throw new ArgumentNullException(nameof(logFactory));
+            _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
             _connectionString = connectionString ?? throw new ArgumentNullException(nameof(connectionString));
             _exchangeName = exchangeName ?? throw new ArgumentNullException(nameof(exchangeName));
         }
@@ -37,14 +37,14 @@ namespace Lykke.RabbitMqBroker.Publisher
                 .ForPublisher(_connectionString, _exchangeName)
                 .MakeDurable();
 
-            _rabbitMqPublisher = new RabbitMqPublisher<TMessage>(_logFactory, settings)
+            _rabbitMqPublisher = new RabbitMqPublisher<TMessage>(_loggerFactory, settings)
                 .SetSerializer(new JsonMessageSerializer<TMessage>())
                 .SetPublishStrategy(new DefaultFanoutPublishStrategy(settings))
-                .PublishSynchronously()
-                .Start();
+                .PublishSynchronously();
+            _rabbitMqPublisher.Start();
         }
 
-        /// <inheritdoc cref="IStopable.Stop"/>
+        /// <inheritdoc cref="IStartStop.Stop"/>
         public void Stop()
         {
             if (_rabbitMqPublisher != null)

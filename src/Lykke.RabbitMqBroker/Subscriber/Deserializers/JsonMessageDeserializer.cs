@@ -6,7 +6,7 @@ using System.Text;
 using JetBrains.Annotations;
 using Newtonsoft.Json;
 
-namespace Lykke.RabbitMqBroker.Subscriber
+namespace Lykke.RabbitMqBroker.Subscriber.Deserializers
 {
     [PublicAPI]
     public class JsonMessageDeserializer<TMessage> : IMessageDeserializer<TMessage>

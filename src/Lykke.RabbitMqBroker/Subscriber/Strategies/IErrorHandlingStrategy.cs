@@ -4,7 +4,7 @@
 using System;
 using System.Threading;
 
-namespace Lykke.RabbitMqBroker
+namespace Lykke.RabbitMqBroker.Subscriber.Strategies
 {
 	public interface IErrorHandlingStrategy
 	{

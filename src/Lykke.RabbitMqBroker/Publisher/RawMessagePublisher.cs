@@ -5,27 +5,22 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
-using System.Threading.Tasks;
-using Microsoft.Extensions.PlatformAbstractions;
+using JetBrains.Annotations;
+using Lykke.RabbitMqBroker.Publisher.Strategies;
 using Microsoft.ApplicationInsights;
 using Microsoft.ApplicationInsights.DataContracts;
 using Microsoft.ApplicationInsights.Extensibility;
-using Common.Log;
-using JetBrains.Annotations;
-using Lykke.Common.Log;
-using Lykke.RabbitMqBroker.Subscriber;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.PlatformAbstractions;
 using RabbitMQ.Client;
 
 namespace Lykke.RabbitMqBroker.Publisher
 {
     internal sealed class RawMessagePublisher : IRawMessagePublisher
     {
-        public string Name { get; }
-        public int BufferedMessagesCount => _buffer.Count;
-
         private const string TelemetryType = "RabbitMq Publisher";
 
-        private readonly ILog _log;
+        private readonly ILogger<RawMessagePublisher> _logger;
         private readonly IPublisherBuffer _buffer;
         private readonly IRabbitMqPublishStrategy _publishStrategy;
         private readonly RabbitMqSubscriptionSettings _settings;
@@ -36,55 +31,23 @@ namespace Lykke.RabbitMqBroker.Publisher
         private readonly CancellationTokenSource _cancellationTokenSource;
         private readonly TelemetryClient _telemetry = new TelemetryClient();
         private readonly string _exchangeQueueName;
-        private bool _disposed;
 
         private Exception _lastPublishException;
+        private bool _disposed;
         private int _reconnectionsInARowCount;
 
-        [Obsolete]
-        public RawMessagePublisher(
-            string name,
-            ILog log,
-            IPublisherBuffer buffer,
-            IRabbitMqPublishStrategy publishStrategy,
-            RabbitMqSubscriptionSettings settings,
-            bool publishSynchronously,
-            bool submitTelemetry)
-        {
-            Name = name;
-            _log = log;
-            _buffer = buffer;
-            _settings = settings;
-            _publishSynchronously = publishSynchronously;
-            _publishStrategy = publishStrategy;
-            _submitTelemetry = submitTelemetry;
-            _exchangeQueueName = _settings.GetQueueOrExchangeName();
-
-            _publishLock = new AutoResetEvent(false);
-            _cancellationTokenSource = new CancellationTokenSource();
-
-            _thread = new Thread(ConnectionThread)
-            {
-                Name = "RabbitMqPublisherLoop"
-            };
-
-            _thread.Start();
-        }
+        public string Name { get; }
+        public int BufferedMessagesCount => _buffer.Count;
 
         public RawMessagePublisher(
             [NotNull] string name,
-            [NotNull] ILogFactory logFactory, 
+            [NotNull] ILogger<RawMessagePublisher> logger,
             [NotNull] IPublisherBuffer buffer,
             [NotNull] IRabbitMqPublishStrategy publishStrategy,
             [NotNull] RabbitMqSubscriptionSettings settings,
             bool publishSynchronously,
             bool submitTelemetry)
         {
-            if (logFactory == null)
-            {
-                throw new ArgumentNullException(nameof(logFactory));
-            }
-
             Name = name ?? throw new ArgumentNullException(nameof(name));
             _buffer = buffer ?? throw new ArgumentNullException(nameof(buffer));
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
@@ -93,11 +56,11 @@ namespace Lykke.RabbitMqBroker.Publisher
             _submitTelemetry = submitTelemetry;
             _exchangeQueueName = _settings.GetQueueOrExchangeName();
 
-            _log = logFactory.CreateLog(this, Name);
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
             _publishLock = new AutoResetEvent(false);
             _cancellationTokenSource = new CancellationTokenSource();
-            
+
             _thread = new Thread(ConnectionThread)
             {
                 Name = "RabbitMqPublisherLoop"
@@ -186,13 +149,13 @@ namespace Lykke.RabbitMqBroker.Publisher
         {
             var factory = new ConnectionFactory {Uri = new Uri(_settings.ConnectionString, UriKind.Absolute)};
 
-            _log.WriteInfo(nameof(ConnectAndWrite), _settings.GetPublisherName(), $"{Name}: trying to connect to {factory.Endpoint} ({_exchangeQueueName})");
+            _logger.LogInformation($"{Name}: trying to connect to {factory.Endpoint} ({_exchangeQueueName})");
 
             var cn = $"[Pub] {PlatformServices.Default.Application.ApplicationName} {PlatformServices.Default.Application.ApplicationVersion} to {_settings.ExchangeName ?? ""}";
             using (var connection = factory.CreateConnection(cn))
             using (var channel = connection.CreateModel())
             {
-                _log.WriteInfo(nameof(ConnectAndWrite), _settings.GetPublisherName(), $"{Name}: connected to {factory.Endpoint} ({_exchangeQueueName})");
+                _logger.LogInformation($"{Name}: connected to {factory.Endpoint} ({_exchangeQueueName})");
                 _publishStrategy.Configure(_settings, channel);
 
                 while (!IsStopped())
@@ -268,7 +231,7 @@ namespace Lykke.RabbitMqBroker.Publisher
 
                         if (_reconnectionsInARowCount > _settings.ReconnectionsCountToAlarm)
                         {
-                            _log.WriteFatalError(Name, _settings.GetPublisherName(), e);
+                            _logger.LogError(e, $"{Name} ({_settings.GetPublisherName()})");
 
                             _reconnectionsInARowCount = 0;
                         }
@@ -285,7 +248,7 @@ namespace Lykke.RabbitMqBroker.Publisher
                 }
             }
 
-            _log.WriteInfo(nameof(ConnectionThread), _settings.GetPublisherName(), $"{Name}: is stopped");
+            _logger.LogInformation($"{Name} ({_settings.GetPublisherName()}): is stopped");
         }
 
         private IOperationHolder<DependencyTelemetry> InitTelemetryOperation(RawMessage message)
@@ -301,3 +264,4 @@ namespace Lykke.RabbitMqBroker.Publisher
         }
     }
 }
+

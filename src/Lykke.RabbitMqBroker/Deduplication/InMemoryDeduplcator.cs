@@ -2,7 +2,6 @@
 // Licensed under the MIT License. See the LICENSE file in the project root for more information.
 
 using System;
-using System.Text;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
 using Microsoft.Extensions.Caching.Memory;
@@ -36,7 +35,7 @@ namespace Lykke.RabbitMqBroker.Deduplication
                     return Task.FromResult(false);
                 Cache.Set(hash, true, _expiration);
             }
-            
+
             return Task.FromResult(true);
         }
     }

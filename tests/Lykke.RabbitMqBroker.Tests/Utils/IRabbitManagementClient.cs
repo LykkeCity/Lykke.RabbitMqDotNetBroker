@@ -3,7 +3,7 @@
 
 using System.Collections.Generic;
 
-namespace RabbitMqBrokerTests
+namespace Lykke.RabbitMqBroker.Tests.Utils
 {
     public interface IRabbitManagementClient
     {

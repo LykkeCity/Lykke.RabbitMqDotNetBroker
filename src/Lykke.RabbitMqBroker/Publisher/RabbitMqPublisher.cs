@@ -6,66 +6,52 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Autofac;
-using Common;
-using Common.Log;
 using JetBrains.Annotations;
-using Lykke.Common;
-using Lykke.Common.Log;
 using Lykke.RabbitMqBroker.Publisher.DeferredMessages;
-using Lykke.RabbitMqBroker.Subscriber;
+using Lykke.RabbitMqBroker.Publisher.Serializers;
+using Lykke.RabbitMqBroker.Publisher.Strategies;
+using Microsoft.Extensions.Logging;
 
 namespace Lykke.RabbitMqBroker.Publisher
 {
+    /// <summary>
+    /// Generic rabbitMq publisher
+    /// </summary>
+    /// <typeparam name="TMessageModel"></typeparam>
     [PublicAPI]
     public class RabbitMqPublisher<TMessageModel> : IStartStop, IMessageProducer<TMessageModel>
     {
-        public string Name => _settings.GetPublisherName();
-
-        // Dependencies
-
         private readonly RabbitMqSubscriptionSettings _settings;
-
-        // Configuration
         private readonly bool _submitTelemetry;
+        private readonly ILoggerFactory _loggerFactory;
+        private readonly ILogger<RabbitMqPublisher<TMessageModel>> _log;
+
         private IPublishingQueueRepository _queueRepository;
-        private bool _disableQueuePersistence;
         private IRabbitMqSerializer<TMessageModel> _serializer;
         private IRabbitMqPublishStrategy _publishStrategy;
-        private ILog _log;
         private RabbitMqPublisherQueueMonitor<TMessageModel> _queueMonitor;
         private DeferredMessagesManager _deferredMessagesManager;
+        private bool _disableQueuePersistence;
         private bool _publishSynchronously;
         private bool _disposed;
 
-        // Implementation
-
         private IRawMessagePublisher _rawPublisher;
-
-        // For testing
-
         private IPublisherBuffer _bufferOverriding;
-        private ILogFactory _logFactory;
+
+        public string Name => _settings.GetPublisherName();
 
         public int BufferedMessagesCount => _rawPublisher?.BufferedMessagesCount ?? 0;
 
-        [Obsolete]
-        public RabbitMqPublisher(RabbitMqSubscriptionSettings settings, bool submitTelemetry = true)
-        {
-            _settings = settings;
-            _submitTelemetry = submitTelemetry;
-        }
-
         public RabbitMqPublisher(
-            [NotNull] ILogFactory logFactory, 
+            [NotNull] ILoggerFactory loggerFactory,
             [NotNull] RabbitMqSubscriptionSettings settings,
             bool submitTelemetry = true)
         {
-            _logFactory = logFactory ?? throw new ArgumentNullException(nameof(logFactory));
+            _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             _submitTelemetry = submitTelemetry;
 
-            _log = logFactory.CreateLog(this);
+            _log = loggerFactory.CreateLogger<RabbitMqPublisher<TMessageModel>>();
         }
 
         #region Configurator
@@ -125,9 +111,10 @@ namespace Lykke.RabbitMqBroker.Publisher
 
             _queueMonitor?.Dispose();
 
-            _queueMonitor = _logFactory == null
-                ? new RabbitMqPublisherQueueMonitor<TMessageModel>(queueSizeThreshold, monitorPeriod ?? TimeSpan.FromSeconds(60), _log)
-                : new RabbitMqPublisherQueueMonitor<TMessageModel>(queueSizeThreshold, monitorPeriod ?? TimeSpan.FromSeconds(60), _logFactory);
+            _queueMonitor = new RabbitMqPublisherQueueMonitor<TMessageModel>(
+                queueSizeThreshold,
+                monitorPeriod ?? TimeSpan.FromSeconds(60),
+                _loggerFactory.CreateLogger<RabbitMqPublisherQueueMonitor<TMessageModel>>());
 
             return this;
         }
@@ -154,9 +141,10 @@ namespace Lykke.RabbitMqBroker.Publisher
 
             _deferredMessagesManager?.Dispose();
 
-            _deferredMessagesManager = _logFactory == null
-                ? new DeferredMessagesManager(repository, deliveryPrecision ?? TimeSpan.FromSeconds(1), _log)
-                : new DeferredMessagesManager(repository, deliveryPrecision ?? TimeSpan.FromSeconds(1), _logFactory);
+            _deferredMessagesManager = new DeferredMessagesManager(
+                repository,
+                deliveryPrecision ?? TimeSpan.FromSeconds(1),
+                _loggerFactory.CreateLogger<DeferredMessagesManager>());
 
             return this;
         }
@@ -168,7 +156,7 @@ namespace Lykke.RabbitMqBroker.Publisher
             _serializer = serializer;
             return this;
         }
-        
+
         /// <summary>
         /// Disables internal buffer. If exception occurred while publishing it will be re-thrown in the <see cref="ProduceAsync(TMessageModel, string)"/>
         /// </summary>
@@ -186,21 +174,6 @@ namespace Lykke.RabbitMqBroker.Publisher
             ThrowIfStarted();
 
             _publishStrategy = publishStrategy;
-            return this;
-        }
-
-        [Obsolete("Use ctor with ILogFactory")]
-        public RabbitMqPublisher<TMessageModel> SetLogger(ILog log)
-        {
-            ThrowIfStarted();
-
-            _log = log;
-            return this;
-        }
-
-        [Obsolete("Remove this call - now it does nothing")]
-        public RabbitMqPublisher<TMessageModel> SetConsole(IConsole console)
-        {
             return this;
         }
 
@@ -271,7 +244,7 @@ namespace Lykke.RabbitMqBroker.Publisher
             {
                 throw new ArgumentNullException(nameof(message));
             }
-            
+
             var body = _serializer.Serialize(message);
 
             _rawPublisher.Produce(new RawMessage(body, routingKey));
@@ -296,12 +269,10 @@ namespace Lykke.RabbitMqBroker.Publisher
 
         #region Start/stop
 
-        public RabbitMqPublisher<TMessageModel> Start()
+        public void Start()
         {
             if (_rawPublisher != null)
-            {
-                return this;
-            }
+                return;
 
             // Check configuration
 
@@ -312,10 +283,6 @@ namespace Lykke.RabbitMqBroker.Publisher
             if (_serializer == null)
             {
                 throw new InvalidOperationException($"Please, setup message serializer, using {nameof(SetSerializer)}() method, before start publisher");
-            }
-            if (_log == null)
-            {
-                throw new InvalidOperationException($"Please, setup logger, using {nameof(SetLogger)}() method, before start publisher");
             }
 
             // Set defaults
@@ -331,28 +298,14 @@ namespace Lykke.RabbitMqBroker.Publisher
 
             var messagesBuffer = _bufferOverriding ?? LoadQueue();
 
-            if (_logFactory == null)
-            {
-                _rawPublisher = new RawMessagePublisher(
-                    Name,
-                    _log,
-                    messagesBuffer,
-                    _publishStrategy,
-                    _settings,
-                    _publishSynchronously,
-                    _submitTelemetry);
-            }
-            else
-            {
-                _rawPublisher = new RawMessagePublisher(
-                    Name,
-                    _logFactory,
-                    messagesBuffer,
-                    _publishStrategy,
-                    _settings,
-                    _publishSynchronously,
-                    _submitTelemetry);
-            }
+            _rawPublisher = new RawMessagePublisher(
+                Name,
+                _loggerFactory.CreateLogger<RawMessagePublisher>(),
+                messagesBuffer,
+                _publishStrategy,
+                _settings,
+                _publishSynchronously,
+                _submitTelemetry);
 
             _queueMonitor.WatchThis(_rawPublisher);
             _queueMonitor.Start();
@@ -362,18 +315,6 @@ namespace Lykke.RabbitMqBroker.Publisher
                 _deferredMessagesManager.Start();
                 _deferredMessagesManager.PublishUsing(_rawPublisher);
             }
-
-            return this;
-        }
-
-        void IStartable.Start()
-        {
-            Start();
-        }
-
-        void IStopable.Stop()
-        {
-            Stop();
         }
 
         public void Stop()
@@ -386,7 +327,7 @@ namespace Lykke.RabbitMqBroker.Publisher
             }
 
             _rawPublisher = null;
-            
+
             try
             {
                 _deferredMessagesManager?.Stop();
@@ -401,20 +342,20 @@ namespace Lykke.RabbitMqBroker.Publisher
                 rawPublisher.Dispose();
             }
         }
-        
+
         public void Dispose()
         {
             Dispose(true);
             GC.SuppressFinalize(this);
         }
-        
+
         protected virtual void Dispose(bool disposing)
         {
             if (_disposed || !disposing)
                 return; 
-            
+
             Stop();
-            
+
             _disposed = true;
         }
 

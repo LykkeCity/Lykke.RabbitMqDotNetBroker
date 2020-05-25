@@ -1,6 +1,5 @@
 ﻿using System.Threading.Tasks;
 using JetBrains.Annotations;
-using Lykke.Common;
 
 namespace Lykke.RabbitMqBroker.Publisher
 {

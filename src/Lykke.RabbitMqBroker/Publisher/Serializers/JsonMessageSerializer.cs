@@ -5,7 +5,7 @@ using System.Text;
 using JetBrains.Annotations;
 using Newtonsoft.Json;
 
-namespace Lykke.RabbitMqBroker.Publisher
+namespace Lykke.RabbitMqBroker.Publisher.Serializers
 {
     [PublicAPI]
     public class JsonMessageSerializer<TMessage> : IRabbitMqSerializer<TMessage>

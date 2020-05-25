@@ -4,7 +4,7 @@
 using System.IO;
 using JetBrains.Annotations;
 
-namespace Lykke.RabbitMqBroker.Publisher
+namespace Lykke.RabbitMqBroker.Publisher.Serializers
 {
     /// <summary>
     /// Uses Protobuf to serialize the message

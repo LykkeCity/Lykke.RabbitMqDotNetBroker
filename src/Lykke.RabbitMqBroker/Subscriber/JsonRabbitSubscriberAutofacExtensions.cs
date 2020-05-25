@@ -1,7 +1,6 @@
 ﻿using System;
 using Autofac;
 using JetBrains.Annotations;
-using Lykke.Common;
 
 namespace Lykke.RabbitMqBroker.Subscriber
 {
@@ -39,11 +38,14 @@ namespace Lykke.RabbitMqBroker.Subscriber
             if (string.IsNullOrWhiteSpace(queueName))
                 throw new ArgumentNullException(nameof(queueName));
 
+            var settings = RabbitMqSubscriptionSettings.ForSubscriber(
+                rabbitMqConnString,
+                exchangeName,
+                queueName);
+
             builder.RegisterType<TSubscriber>()
                 .As<IStartStop>()
-                .WithParameter("connectionString", rabbitMqConnString)
-                .WithParameter("exchangeName", exchangeName)
-                .WithParameter("queueName", queueName)
+                .WithParameter(TypedParameter.From(settings))
                 .SingleInstance();
         }
     }

@@ -3,13 +3,12 @@
 
 using System;
 using System.Threading;
-using Lykke.Logs;
-using Lykke.RabbitMqBroker;
-using Lykke.RabbitMqBroker.Subscriber;
+using Lykke.RabbitMqBroker.Subscriber.Strategies;
+using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using NUnit.Framework;
 
-namespace RabbitMqBrokerTests
+namespace Lykke.RabbitMqBroker.Tests
 {
     [TestFixture]
     internal class ResilientErrorHandlingStrategyTest
@@ -19,11 +18,12 @@ namespace RabbitMqBrokerTests
         [SetUp]
         public void SetUp()
         {
-            RabbitMqSubscriptionSettings settings = new RabbitMqSubscriptionSettings
+            var settings = new RabbitMqSubscriptionSettings
             {
                 QueueName = "QueueName"
             };
-            _strategy = new ResilientErrorHandlingStrategy(EmptyLogFactory.Instance, settings, TimeSpan.FromMilliseconds(5));
+            _strategy = new ResilientErrorHandlingStrategy(
+                new NullLogger<ResilientErrorHandlingStrategy>(), settings, TimeSpan.FromMilliseconds(5));
         }
 
         [Test]

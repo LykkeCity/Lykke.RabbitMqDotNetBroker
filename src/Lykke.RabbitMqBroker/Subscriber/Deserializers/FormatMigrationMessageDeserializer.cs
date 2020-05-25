@@ -4,7 +4,7 @@
 using System;
 using JetBrains.Annotations;
 
-namespace Lykke.RabbitMqBroker.Subscriber
+namespace Lykke.RabbitMqBroker.Subscriber.Deserializers
 {
     /// <summary>
     /// Deserializes messages of the type <typeparamref name="TMessage"/> which can be transmitted in two different formats.

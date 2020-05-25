@@ -1,10 +1,10 @@
 ﻿// Copyright (c) Lykke Corp.
 // Licensed under the MIT License. See the LICENSE file in the project root for more information.
 
-using JetBrains.Annotations;
 using System;
+using JetBrains.Annotations;
 
-namespace Lykke.RabbitMqBroker.Subscriber
+namespace Lykke.RabbitMqBroker
 {
     // TODO: Hide setters, when next breaking changes release will be required
     [PublicAPI]
