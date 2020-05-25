@@ -1,0 +1,22 @@
+name: Validate commit
+
+on: 
+  push:
+    branches:
+      - '*'
+  pull_request:
+    branches:
+      - '*'
+
+jobs:
+  publish:
+    name: Validate commit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Build
+        run: dotnet build --configuration Release "Lykke.RabbitMqBroker.sln"
+
+      - name: Test
+        run: dotnet test --configuration Release "Lykke.RabbitMqBroker.sln"

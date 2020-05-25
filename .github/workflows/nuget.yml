@@ -1,0 +1,24 @@
+name: Publish On NuGet
+
+on:
+  push:
+    branches:
+      - master
+    tags:
+      - '*' # Push version tags matching to *, i.e. v1.0.0, 20.15.10 
+
+jobs:
+  publish:
+    name: List on NuGet
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Build
+        run: dotnet build --configuration Release "Lykke.RabbitMqBroker.sln"
+        
+      - name: Create the package
+        run: dotnet pack --configuration Release src/Lykke.RabbitMqBroker/Lykke.RabbitMqBroker.csproj /p:Version=${GITHUB_REF#refs/tags/}
+        
+      - name: Publish the package to GPR
+        run: dotnet nuget push src/Lykke.RabbitMqBroker/bin/Release/*.nupkg -s "https://api.nuget.org/v3/index.json" -k ${{ secrets.NUGET_API_KEY }}
