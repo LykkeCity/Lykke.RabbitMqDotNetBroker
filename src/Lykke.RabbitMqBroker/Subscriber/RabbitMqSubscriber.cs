@@ -224,19 +224,19 @@ namespace Lykke.RabbitMqBroker.Subscriber
             try
             {
                 var body = basicDeliverEventArgs.Body;
-                var header = string.IsNullOrEmpty(_deduplicatorHeader) ||
-                             !basicDeliverEventArgs.BasicProperties.Headers.ContainsKey(_deduplicatorHeader)
-                    ? Array.Empty<byte>()
-                    : Encoding.UTF8.GetBytes(
-                        JsonConvert.SerializeObject(
-                            basicDeliverEventArgs.BasicProperties.Headers[_deduplicatorHeader],
-                            new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore }));
 
                 if (_enableMessageDeduplication)
                 {
-                    var isDuplicated = header.Length == 0
+                    var deduplicationHeaderBytes = string.IsNullOrEmpty(_deduplicatorHeader) ||
+                                 !basicDeliverEventArgs.BasicProperties.Headers.ContainsKey(_deduplicatorHeader)
+                        ? Array.Empty<byte>()
+                        : Encoding.UTF8.GetBytes(
+                            JsonConvert.SerializeObject(
+                                basicDeliverEventArgs.BasicProperties.Headers[_deduplicatorHeader],
+                                new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore }));
+                    var isDuplicated = deduplicationHeaderBytes.Length == 0
                         ? !_deduplicator.EnsureNotDuplicateAsync(body).GetAwaiter().GetResult()
-                        : !_deduplicator.EnsureNotDuplicateAsync(header).GetAwaiter().GetResult();
+                        : !_deduplicator.EnsureNotDuplicateAsync(deduplicationHeaderBytes).GetAwaiter().GetResult();
 
                     if (isDuplicated)
                     {
