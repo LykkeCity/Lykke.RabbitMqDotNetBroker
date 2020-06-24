@@ -258,17 +258,17 @@ namespace Lykke.RabbitMqBroker.Subscriber
             try
             {
                 var body = basicDeliverEventArgs.Body;
-                var header = string.IsNullOrEmpty(_deduplicatorHeader) ||
-                             !basicDeliverEventArgs.BasicProperties.Headers.ContainsKey(_deduplicatorHeader)
-                    ? Array.Empty<byte>()
-                    : Encoding.UTF8.GetBytes(basicDeliverEventArgs.BasicProperties.Headers[_deduplicatorHeader].ToJson());
 
                 if (_enableMessageDeduplication)
                 {
+                    var header = string.IsNullOrEmpty(_deduplicatorHeader) ||
+                                 !basicDeliverEventArgs.BasicProperties.Headers.ContainsKey(_deduplicatorHeader)
+                        ? Array.Empty<byte>()
+                        : Encoding.UTF8.GetBytes(basicDeliverEventArgs.BasicProperties.Headers[_deduplicatorHeader].ToJson());
                     var isDuplicated = header.Length == 0
                         ? !_deduplicator.EnsureNotDuplicateAsync(body).GetAwaiter().GetResult()
                         : !_deduplicator.EnsureNotDuplicateAsync(header).GetAwaiter().GetResult();
-                        
+
                     if (isDuplicated)
                     {
                         ma.Accept();
