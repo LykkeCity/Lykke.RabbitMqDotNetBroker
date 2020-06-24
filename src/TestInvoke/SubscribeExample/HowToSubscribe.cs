@@ -5,7 +5,7 @@ using System;
 using System.Threading.Tasks;
 using Lykke.RabbitMqBroker;
 using Lykke.RabbitMqBroker.Subscriber;
-using Lykke.RabbitMqBroker.Subscriber.Strategies;
+using Lykke.RabbitMqBroker.Subscriber.ErrorHandlingStrategies;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace TestInvoke.SubscribeExample

@@ -7,7 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Lykke.RabbitMqBroker.Subscriber;
 using Lykke.RabbitMqBroker.Subscriber.Deserializers;
-using Lykke.RabbitMqBroker.Subscriber.Strategies;
+using Lykke.RabbitMqBroker.Subscriber.ErrorHandlingStrategies;
 using Microsoft.Extensions.Logging.Abstractions;
 using NUnit.Framework;
 using RabbitMQ.Client;

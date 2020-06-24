@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 using Autofac;
 using JetBrains.Annotations;
 using Lykke.RabbitMqBroker.Subscriber.Deserializers;
-using Lykke.RabbitMqBroker.Subscriber.Strategies;
+using Lykke.RabbitMqBroker.Subscriber.ErrorHandlingStrategies;
 using Microsoft.Extensions.Logging;
 
 namespace Lykke.RabbitMqBroker.Subscriber

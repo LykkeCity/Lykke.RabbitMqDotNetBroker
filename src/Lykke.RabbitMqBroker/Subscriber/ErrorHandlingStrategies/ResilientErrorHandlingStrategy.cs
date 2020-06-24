@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using JetBrains.Annotations;
 using Microsoft.Extensions.Logging;
 
-namespace Lykke.RabbitMqBroker.Subscriber.Strategies
+namespace Lykke.RabbitMqBroker.Subscriber.ErrorHandlingStrategies
 {
     [PublicAPI]
     public sealed class ResilientErrorHandlingStrategy : IErrorHandlingStrategy

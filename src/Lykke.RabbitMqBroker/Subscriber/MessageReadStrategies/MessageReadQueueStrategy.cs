@@ -3,7 +3,7 @@
 
 using RabbitMQ.Client;
 
-namespace Lykke.RabbitMqBroker.Subscriber.Strategies
+namespace Lykke.RabbitMqBroker.Subscriber.MessageReadStrategies
 {
     public class MessageReadQueueStrategy : IMessageReadStrategy
     {
