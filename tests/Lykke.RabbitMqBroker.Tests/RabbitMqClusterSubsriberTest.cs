@@ -5,11 +5,11 @@ using System;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Lykke.RabbitMqBroker.Deduplication;
 using Lykke.RabbitMqBroker.Subscriber;
 using Lykke.RabbitMqBroker.Subscriber.Deserializers;
-using Lykke.RabbitMqBroker.Subscriber.ErrorHandlingStrategies;
 using Lykke.RabbitMqBroker.Subscriber.MessageReadStrategies;
+using Lykke.RabbitMqBroker.Subscriber.Middleware.Deduplication;
+using Lykke.RabbitMqBroker.Subscriber.Middleware.ErrorHandling;
 using Microsoft.Extensions.Logging.Abstractions;
 using NUnit.Framework;
 using RabbitMQ.Client;
@@ -43,12 +43,12 @@ namespace Lykke.RabbitMqBroker.Tests
             };
             _subscriber = new RabbitMqSubscriber<string>(
                     new NullLogger<RabbitMqSubscriber<string>>(),
-                    settings,
-                    new DefaultErrorHandlingStrategy(new NullLogger<DefaultErrorHandlingStrategy>(), settings))
+                    settings)
+                .UseMiddleware(new InMemoryDeduplicationMiddleware<string>())
+                .UseMiddleware(new ExceptionSwallowMiddleware<string>(new NullLogger<ExceptionSwallowMiddleware<string>>()))
                 .SetMessageDeserializer(new DefaultStringDeserializer())
                 .SetMessageReadStrategy(new MessageReadQueueStrategy())
                 .SetAlternativeExchange(AlternativeConnectionString)
-                .SetDeduplicator(new InMemoryDeduplcator())
                 .CreateDefaultBinding();
 
             var handler = new Func<string, Task>(s =>
@@ -100,12 +100,12 @@ namespace Lykke.RabbitMqBroker.Tests
             };
             _subscriber = new RabbitMqSubscriber<string>(
                     new NullLogger<RabbitMqSubscriber<string>>(), 
-                    settings,
-                    new DefaultErrorHandlingStrategy(new NullLogger<DefaultErrorHandlingStrategy>(), settings))
+                    settings)
+                .UseMiddleware(new InMemoryDeduplicationMiddleware<string>())
+                .UseMiddleware(new ExceptionSwallowMiddleware<string>(new NullLogger<ExceptionSwallowMiddleware<string>>()))
                 .SetMessageDeserializer(new DefaultStringDeserializer())
                 .SetMessageReadStrategy(new MessageReadQueueStrategy())
                 .SetAlternativeExchange(AlternativeConnectionString)
-                .SetDeduplicator(new InMemoryDeduplcator())
                 .CreateDefaultBinding();
 
             var handler = new Func<string, Task>(s =>

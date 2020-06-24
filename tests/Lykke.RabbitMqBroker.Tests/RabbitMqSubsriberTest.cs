@@ -7,7 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Lykke.RabbitMqBroker.Subscriber;
 using Lykke.RabbitMqBroker.Subscriber.Deserializers;
-using Lykke.RabbitMqBroker.Subscriber.ErrorHandlingStrategies;
+using Lykke.RabbitMqBroker.Subscriber.Middleware.ErrorHandling;
 using Microsoft.Extensions.Logging.Abstractions;
 using NUnit.Framework;
 using RabbitMQ.Client;
@@ -25,9 +25,8 @@ namespace Lykke.RabbitMqBroker.Tests
         {
             _subscriber = new RabbitMqSubscriber<string>(
                     new NullLogger<RabbitMqSubscriber<string>>(),
-                    _settings,
-                    new DefaultErrorHandlingStrategy(new NullLogger<DefaultErrorHandlingStrategy>(), _settings),
-                    submitTelemetry: false)
+                    _settings)
+                .UseMiddleware(new ExceptionSwallowMiddleware<string>(new NullLogger<ExceptionSwallowMiddleware<string>>()))
                 .CreateDefaultBinding()
                 .SetMessageDeserializer(new DefaultStringDeserializer());
         }
@@ -61,8 +60,8 @@ namespace Lykke.RabbitMqBroker.Tests
         {
             _subscriber = new RabbitMqSubscriber<string>(
                     new NullLogger<RabbitMqSubscriber<string>>(),
-                    _settings,
-                    new DeadQueueErrorHandlingStrategy(new NullLogger<DeadQueueErrorHandlingStrategy>(), _settings))
+                    _settings)
+                .UseMiddleware(new ExceptionSwallowMiddleware<string>(new NullLogger<ExceptionSwallowMiddleware<string>>()))
                 .CreateDefaultBinding()
                 .SetMessageDeserializer(new DefaultStringDeserializer());
 

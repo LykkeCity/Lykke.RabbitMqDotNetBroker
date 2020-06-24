@@ -3,7 +3,9 @@
 
 using System;
 using System.Threading;
-using Lykke.RabbitMqBroker.Subscriber.ErrorHandlingStrategies;
+using System.Threading.Tasks;
+using Lykke.RabbitMqBroker.Subscriber.Middleware;
+using Lykke.RabbitMqBroker.Subscriber.Middleware.ErrorHandling;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using NUnit.Framework;
@@ -13,25 +15,28 @@ namespace Lykke.RabbitMqBroker.Tests
     [TestFixture]
     internal class ResilientErrorHandlingStrategyTest
     {
-        private ResilientErrorHandlingStrategy _strategy;
+        private readonly RabbitMqSubscriptionSettings _settings = new RabbitMqSubscriptionSettings
+        {
+            QueueName = "QueueName"
+        };
+        private ResilientErrorHandlingMiddleware<string> _middleware;
 
         [SetUp]
         public void SetUp()
         {
-            var settings = new RabbitMqSubscriptionSettings
-            {
-                QueueName = "QueueName"
-            };
-            _strategy = new ResilientErrorHandlingStrategy(
-                new NullLogger<ResilientErrorHandlingStrategy>(), settings, TimeSpan.FromMilliseconds(5));
+            _middleware = new ResilientErrorHandlingMiddleware<string>(
+                new NullLogger<ResilientErrorHandlingMiddleware<string>>(), TimeSpan.FromMilliseconds(5));
         }
 
         [Test]
         public void SuccessfulPath()
         {
-            var handler = new Action(() => { });
             var acceptor = Substitute.For<IMessageAcceptor>();
-            _strategy.Execute(handler, acceptor, CancellationToken.None);
+            var middlewarequeue = new MiddlewareQueue<string>(_settings);
+            middlewarequeue.AddMiddleware(_middleware);
+            middlewarequeue.AddMiddleware(new ActualHandlerMiddleware<string>(_ => Task.CompletedTask));
+
+            middlewarequeue.RunMiddlewaresAsync(null, null, acceptor, CancellationToken.None).GetAwaiter().GetResult();
 
             acceptor.Received(1).Accept();
         }

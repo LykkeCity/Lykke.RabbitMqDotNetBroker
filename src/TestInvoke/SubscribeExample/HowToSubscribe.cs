@@ -5,7 +5,7 @@ using System;
 using System.Threading.Tasks;
 using Lykke.RabbitMqBroker;
 using Lykke.RabbitMqBroker.Subscriber;
-using Lykke.RabbitMqBroker.Subscriber.ErrorHandlingStrategies;
+using Lykke.RabbitMqBroker.Subscriber.Middleware.ErrorHandling;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace TestInvoke.SubscribeExample
@@ -19,12 +19,12 @@ namespace TestInvoke.SubscribeExample
             _connector =
                 new RabbitMqSubscriber<string>(
                     new NullLogger<RabbitMqSubscriber<string>>(),
-                    settings,
-                    new DefaultErrorHandlingStrategy(new NullLogger<DefaultErrorHandlingStrategy>(), settings))
-                  .SetMessageDeserializer(new TestMessageDeserializer())
-                  .CreateDefaultBinding()
-                  .Subscribe(HandleMessage)
-                  .Start();
+                    settings)
+                    .UseMiddleware(new ExceptionSwallowMiddleware<string>(new NullLogger<ExceptionSwallowMiddleware<string>>()))
+                    .SetMessageDeserializer(new TestMessageDeserializer())
+                    .CreateDefaultBinding()
+                    .Subscribe(HandleMessage)
+                    .Start();
         }
 
         public static void Stop()

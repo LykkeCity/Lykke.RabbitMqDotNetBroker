@@ -3,7 +3,9 @@
 
 using System;
 using System.Threading;
-using Lykke.RabbitMqBroker.Subscriber.ErrorHandlingStrategies;
+using System.Threading.Tasks;
+using Lykke.RabbitMqBroker.Subscriber.Middleware;
+using Lykke.RabbitMqBroker.Subscriber.Middleware.ErrorHandling;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using NUnit.Framework;
@@ -13,25 +15,27 @@ namespace Lykke.RabbitMqBroker.Tests
     [TestFixture]
     public class DefaultErrorHandlingStrategyTest
     {
-        private DefaultErrorHandlingStrategy _strategy;
-        private RabbitMqSubscriptionSettings _settings;
+        private readonly RabbitMqSubscriptionSettings _settings = new RabbitMqSubscriptionSettings
+        {
+            QueueName = "QueueName"
+        };
+        private ExceptionSwallowMiddleware<string> _middleware;
 
         [SetUp]
         public void SetUp()
         {
-            _settings = new RabbitMqSubscriptionSettings
-            {
-                QueueName = "QueueName"
-            };
-            _strategy = new DefaultErrorHandlingStrategy(new NullLogger<DefaultErrorHandlingStrategy>(), _settings);
+            _middleware = new ExceptionSwallowMiddleware<string>(new NullLogger<ExceptionSwallowMiddleware<string>>());
         }
 
         [Test]
         public void SuccessfulPath()
         {
-            var handler = new Action(() => { });
             var acceptor = Substitute.For<IMessageAcceptor>();
-            _strategy.Execute(handler, acceptor, CancellationToken.None);
+            var middlewarequeue = new MiddlewareQueue<string>(_settings);
+            middlewarequeue.AddMiddleware(_middleware);
+            middlewarequeue.AddMiddleware(new ActualHandlerMiddleware<string>(_ => Task.CompletedTask));
+
+            middlewarequeue.RunMiddlewaresAsync(null, null, acceptor, CancellationToken.None).GetAwaiter().GetResult();
 
             acceptor.Received(1).Accept();
         }
@@ -39,15 +43,16 @@ namespace Lykke.RabbitMqBroker.Tests
         [Test]
         public void ShouldResendToNextHandlerOnError()
         {
-            var nextHandler = Substitute.For<IErrorHandlingStrategy>();
-            _strategy = new DefaultErrorHandlingStrategy(new NullLogger<DefaultErrorHandlingStrategy>(), _settings, nextHandler);
-
-            var handler = new Action(() => throw new Exception());
             var acceptor = Substitute.For<IMessageAcceptor>();
+            var rootEventMiddlewareHandler = Substitute.For<IEventMiddleware<string>>();
+            var middlewarequeue = new MiddlewareQueue<string>(_settings);
+            middlewarequeue.AddMiddleware(rootEventMiddlewareHandler);
+            middlewarequeue.AddMiddleware(_middleware);
+            middlewarequeue.AddMiddleware(new ActualHandlerMiddleware<string>(_ => throw new Exception()));
 
-            _strategy.Execute(handler, acceptor, CancellationToken.None);
+            middlewarequeue.RunMiddlewaresAsync(null, null, acceptor, CancellationToken.None).GetAwaiter().GetResult();
 
-            nextHandler.Received(1).Execute(handler, acceptor, CancellationToken.None);
+            rootEventMiddlewareHandler.Received(1).ProcessAsync(Arg.Any<IEventContext<string>>());
         }
     }
 }
