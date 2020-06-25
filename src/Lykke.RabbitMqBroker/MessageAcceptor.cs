@@ -21,9 +21,9 @@ namespace Lykke.RabbitMqBroker
             _model.BasicAck(_deliveryTag, false);
         }
 
-        public void Reject()
+        public void Reject(bool requeue = false)
         {
-            _model.BasicReject(_deliveryTag, false);
+            _model.BasicReject(_deliveryTag, requeue);
         }
     }
 }

@@ -6,6 +6,6 @@ namespace Lykke.RabbitMqBroker
     public interface IMessageAcceptor
     {
         void Accept();
-        void Reject();
+        void Reject(bool requeue = false);
     }
 }
