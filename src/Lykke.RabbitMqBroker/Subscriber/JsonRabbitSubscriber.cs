@@ -101,12 +101,15 @@ namespace Lykke.RabbitMqBroker.Subscriber
         /// <inheritdoc cref="IStartStop.Stop"/>
         public void Stop()
         {
-            if (_subscriber != null)
-            {
-                _subscriber.Stop();
-                _subscriber.Dispose();
-                _subscriber = null;
-            }
+            var subscriber = _subscriber;
+
+            if (_subscriber == null)
+                return;
+
+            _subscriber = null;
+
+            subscriber.Stop();
+            subscriber.Dispose();
         }
 
         /// <inheritdoc cref="IDisposable"/>

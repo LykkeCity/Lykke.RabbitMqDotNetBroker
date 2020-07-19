@@ -47,12 +47,15 @@ namespace Lykke.RabbitMqBroker.Publisher
         /// <inheritdoc cref="IStartStop.Stop"/>
         public void Stop()
         {
-            if (_rabbitMqPublisher != null)
-            {
-                _rabbitMqPublisher.Stop();
-                _rabbitMqPublisher.Dispose();
-                _rabbitMqPublisher = null;
-            }
+            var rabbitMqPublisher = _rabbitMqPublisher;
+
+            if (_rabbitMqPublisher == null)
+                return;
+
+            _rabbitMqPublisher = null;
+
+            rabbitMqPublisher.Stop();
+            rabbitMqPublisher.Dispose();
         }
 
         /// <inheritdoc cref="IDisposable"/>
