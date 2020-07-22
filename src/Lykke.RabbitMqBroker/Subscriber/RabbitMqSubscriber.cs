@@ -100,6 +100,9 @@ namespace Lykke.RabbitMqBroker.Subscriber
 
         public RabbitMqSubscriber<TTopicModel> UseMiddleware(IEventMiddleware<TTopicModel> middleware)
         {
+            if (!IsStopped())
+                throw new InvalidOperationException("New middleware can't be added after subscriber Start");
+
             _middlewareQueue.AddMiddleware(middleware ?? throw new ArgumentNullException());
             return this;
         }
@@ -155,13 +158,13 @@ namespace Lykke.RabbitMqBroker.Subscriber
         private void ConnectAndRead(RabbitMqSubscriptionSettings settings)
         {
             var factory = new ConnectionFactory {Uri = new Uri(settings.ConnectionString, UriKind.Absolute)};
-            _logger.LogInformation($"Trying to connect to {factory.Endpoint} ({settings.GetSubscriberName()} - {_exchangeQueueName})");
+            _logger.LogInformation($"{settings.GetSubscriberName()}: Trying to connect to {factory.Endpoint} ({_exchangeQueueName})");
 
             var cn = $"[Sub] {PlatformServices.Default.Application.ApplicationName} {PlatformServices.Default.Application.ApplicationVersion} to {_exchangeQueueName}";
             using (var connection = factory.CreateConnection(cn))
             using (var channel = connection.CreateModel())
             {
-                _logger.LogInformation($"Connected to {factory.Endpoint} ({settings.GetSubscriberName()} - {_exchangeQueueName})");
+                _logger.LogInformation($"{settings.GetSubscriberName()}: Connected to {factory.Endpoint} ({_exchangeQueueName})");
 
                 if (_prefetchCount.HasValue)
                     channel.BasicQos(0, _prefetchCount.Value, false);
