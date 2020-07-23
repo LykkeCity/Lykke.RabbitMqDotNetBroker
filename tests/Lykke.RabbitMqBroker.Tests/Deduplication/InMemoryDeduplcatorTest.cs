@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See the LICENSE file in the project root for more information.
 
 using System.Threading;
+using Lykke.RabbitMqBroker.Subscriber;
 using Lykke.RabbitMqBroker.Subscriber.Middleware;
 using Lykke.RabbitMqBroker.Subscriber.Middleware.Deduplication;
 using NSubstitute;

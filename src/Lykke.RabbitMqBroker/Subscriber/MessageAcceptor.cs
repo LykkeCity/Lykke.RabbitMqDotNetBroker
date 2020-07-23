@@ -3,12 +3,13 @@
 
 using RabbitMQ.Client;
 
-namespace Lykke.RabbitMqBroker
+namespace Lykke.RabbitMqBroker.Subscriber
 {
     internal sealed class MessageAcceptor : IMessageAcceptor
     {
         private readonly IModel _model;
         private readonly ulong _deliveryTag;
+        private bool _alreadyProcessed;
 
         public MessageAcceptor(IModel model, ulong deliveryTag)
         {
@@ -18,12 +19,22 @@ namespace Lykke.RabbitMqBroker
 
         public void Accept()
         {
+            if (_alreadyProcessed)
+                return;
+
             _model.BasicAck(_deliveryTag, false);
+
+            _alreadyProcessed = true;
         }
 
         public void Reject(bool requeue = false)
         {
+            if (_alreadyProcessed)
+                return;
+
             _model.BasicReject(_deliveryTag, requeue);
+
+            _alreadyProcessed = true;
         }
     }
 }

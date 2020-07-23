@@ -4,6 +4,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Lykke.RabbitMqBroker.Subscriber;
 using Lykke.RabbitMqBroker.Subscriber.Middleware;
 using Lykke.RabbitMqBroker.Subscriber.Middleware.ErrorHandling;
 using Microsoft.Extensions.Logging.Abstractions;
