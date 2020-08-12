@@ -1,5 +1,6 @@
 ﻿using System;
 using Autofac;
+using Autofac.Builder;
 using JetBrains.Annotations;
 
 namespace Lykke.RabbitMqBroker.Publisher
@@ -17,7 +18,7 @@ namespace Lykke.RabbitMqBroker.Publisher
         /// <param name="builder">Autofac container builder.</param>
         /// <param name="rabbitMqConnString">Connection string to RabbitMq.</param>
         /// <param name="exchangeName">Exchange name.</param>
-        public static void RegisterJsonRabbitPublisher<TMessage>(
+        public static IRegistrationBuilder<JsonRabbitPublisher<TMessage>, ConcreteReflectionActivatorData, SingleRegistrationStyle> RegisterJsonRabbitPublisher<TMessage>(
             [NotNull] this ContainerBuilder builder,
             [NotNull] string rabbitMqConnString,
             [NotNull] string exchangeName
@@ -32,7 +33,7 @@ namespace Lykke.RabbitMqBroker.Publisher
             if (string.IsNullOrWhiteSpace(exchangeName))
                 throw new ArgumentNullException(nameof(exchangeName));
 
-            builder.RegisterType<JsonRabbitPublisher<TMessage>>()
+            return builder.RegisterType<JsonRabbitPublisher<TMessage>>()
                 .As<IRabbitPublisher<TMessage>>()
                 .As<IStartable>()
                 .As<IStartStop>()
