@@ -21,8 +21,9 @@ namespace Lykke.RabbitMqBroker.Subscriber.Middleware.ErrorHandling
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(
-                    $"Failed to handle the message. Send it to poison queue {context.Settings.GetSubscriberName()} {context.Settings.QueueName}-poison. Exception {ex}");
+                _logger.LogError(
+                    ex,
+                    $"Failed to handle the message. Sending it to poison queue {context.Settings.GetSubscriberName()} {context.Settings.QueueName}-poison.");
                 context.MessageAcceptor.Reject();
             }
         }
