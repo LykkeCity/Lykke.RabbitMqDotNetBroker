@@ -22,9 +22,6 @@ namespace Lykke.RabbitMqBroker.Subscriber.Middleware.ErrorHandling
             catch (Exception ex)
             {
                 _logger.LogError(ex, context.Settings.GetSubscriberName());
-            }
-            finally
-            {
                 context.MessageAcceptor.Accept();
             }
         }

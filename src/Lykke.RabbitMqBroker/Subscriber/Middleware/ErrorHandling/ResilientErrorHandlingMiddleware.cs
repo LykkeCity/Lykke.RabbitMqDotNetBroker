@@ -22,8 +22,6 @@ namespace Lykke.RabbitMqBroker.Subscriber.Middleware.ErrorHandling
 
         public async Task ProcessAsync(IEventContext<T> context)
         {
-            var isAllAttemptsFailed = false;
-
             try
             {
                 await context.InvokeNextAsync();
@@ -42,6 +40,7 @@ namespace Lykke.RabbitMqBroker.Subscriber.Middleware.ErrorHandling
                     try
                     {
                         await context.InvokeNextAsync();
+                        return;
                     }
                     catch (Exception ex2)
                     {
@@ -50,15 +49,7 @@ namespace Lykke.RabbitMqBroker.Subscriber.Middleware.ErrorHandling
                     }
                 }
 
-                isAllAttemptsFailed = true;
-
                 throw;
-            }
-            finally
-            {
-                // Finally, the message should be accepted, if it was successfully processed
-                if (!isAllAttemptsFailed)
-                    context.MessageAcceptor.Accept();
             }
         }
     }

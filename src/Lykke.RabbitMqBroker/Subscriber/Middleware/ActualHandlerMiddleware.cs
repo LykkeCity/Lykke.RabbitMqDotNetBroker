@@ -19,11 +19,12 @@ namespace Lykke.RabbitMqBroker.Subscriber.Middleware
             _cancellableEventHandler = cancellableEventHandler ?? throw new ArgumentNullException();
         }
 
-        public Task ProcessAsync(IEventContext<T> context)
+        public async Task ProcessAsync(IEventContext<T> context)
         {
-            return _cancellableEventHandler != null
+            await (_cancellableEventHandler != null
                 ? _cancellableEventHandler(context.Event, context.CancellationToken)
-                : _eventHandler(context.Event);
+                : _eventHandler(context.Event));
+            context.MessageAcceptor.Accept();
         }
     }
 }

@@ -18,7 +18,6 @@ namespace Lykke.RabbitMqBroker.Subscriber.Middleware.ErrorHandling
             try
             {
                 await context.InvokeNextAsync();
-                context.MessageAcceptor.Accept();
             }
             catch (Exception ex)
             {
