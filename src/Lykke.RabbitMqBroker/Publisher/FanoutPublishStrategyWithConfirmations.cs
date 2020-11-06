@@ -10,6 +10,7 @@ namespace Lykke.RabbitMqBroker.Publisher
     public sealed class FanoutPublishStrategyWithConfirmations : IRabbitMqPublishStrategy
     {
         private readonly bool _durable;
+        private readonly TimeSpan _defaultConfirmationTimeout = TimeSpan.FromSeconds(5);
 
         public FanoutPublishStrategyWithConfirmations(RabbitMqSubscriptionSettings settings)
         {
@@ -32,7 +33,7 @@ namespace Lykke.RabbitMqBroker.Publisher
                 routingKey: string.Empty,
                 basicProperties: null,
                 body: message.Body);
-            channel.WaitForConfirmsOrDie(settings.PublisherConfirmationTimeout);
+            channel.WaitForConfirmsOrDie(settings.PublisherConfirmationTimeout ?? _defaultConfirmationTimeout);
         }
     }
 }
