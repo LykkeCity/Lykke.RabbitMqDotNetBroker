@@ -12,7 +12,6 @@ namespace Lykke.RabbitMqBroker.Subscriber
     {
         internal const string LykkeNameSpace = "lykke";
         internal static TimeSpan DefaultReconnectionDelay = TimeSpan.FromSeconds(3);
-        internal static TimeSpan DefaultPublisherConfirmationTimeout = TimeSpan.FromSeconds(5);
         internal const int DefaultReconnectionsCountToAlarm = 20;
 
         public string ConnectionString { get; set; }
@@ -30,17 +29,17 @@ namespace Lykke.RabbitMqBroker.Subscriber
         /// </summary>
         public int ReconnectionsCountToAlarm { get; set; }
         /// <summary>
-        /// The confirmation period when publishing messages.
-        /// Default value is 5 seconds
+        /// The confirmation period when publishing messages. The confirmation strategy will not be used
+        /// unless the value is provided explicitly. Check <see cref="UsePublisherConfirmation"/>. 
         /// </summary>
-        public TimeSpan PublisherConfirmationTimeout { get; set; }
+        public TimeSpan? PublisherConfirmationTimeout { get; set; }
 
         public RabbitMqSubscriptionSettings()
         {
             ReconnectionDelay = DefaultReconnectionDelay;
             ReconnectionsCountToAlarm = DefaultReconnectionsCountToAlarm;
             RoutingKey = string.Empty;
-            PublisherConfirmationTimeout = DefaultPublisherConfirmationTimeout;
+            PublisherConfirmationTimeout = null;
         }
 
         /// <summary>
