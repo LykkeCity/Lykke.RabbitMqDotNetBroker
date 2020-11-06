@@ -12,6 +12,7 @@ namespace Lykke.RabbitMqBroker.Subscriber
     {
         internal const string LykkeNameSpace = "lykke";
         internal static TimeSpan DefaultReconnectionDelay = TimeSpan.FromSeconds(3);
+        internal static TimeSpan DefaultPublisherConfirmationTimeout = TimeSpan.FromSeconds(5);
         internal const int DefaultReconnectionsCountToAlarm = 20;
 
         public string ConnectionString { get; set; }
@@ -28,12 +29,18 @@ namespace Lykke.RabbitMqBroker.Subscriber
         /// Count of silent reconnection attempts before write error message to the log. Default is - 20
         /// </summary>
         public int ReconnectionsCountToAlarm { get; set; }
+        /// <summary>
+        /// The confirmation period when publishing messages.
+        /// Default value is 5 seconds
+        /// </summary>
+        public TimeSpan PublisherConfirmationTimeout { get; set; }
 
         public RabbitMqSubscriptionSettings()
         {
             ReconnectionDelay = DefaultReconnectionDelay;
             ReconnectionsCountToAlarm = DefaultReconnectionsCountToAlarm;
             RoutingKey = string.Empty;
+            PublisherConfirmationTimeout = DefaultPublisherConfirmationTimeout;
         }
 
         /// <summary>
@@ -180,6 +187,13 @@ namespace Lykke.RabbitMqBroker.Subscriber
                 QueueName = GetQueueNameWithValidation(namespaceOfSourceEndpoint, nameOfSourceEndpoint, nameOfEndpoint),
                 DeadLetterExchangeName = GetDeadLetterExchangeNameWithValidation(namespaceOfEndpoint, nameOfSourceEndpoint, nameOfEndpoint)
             };
+        }
+
+        public RabbitMqSubscriptionSettings UsePublisherConfirmation(TimeSpan timeout)
+        {
+            PublisherConfirmationTimeout = timeout;
+
+            return this;
         }
 
         public RabbitMqSubscriptionSettings MakeDurable()
