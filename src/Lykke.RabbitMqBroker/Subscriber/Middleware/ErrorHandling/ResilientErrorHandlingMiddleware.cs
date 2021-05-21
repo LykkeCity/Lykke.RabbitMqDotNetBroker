@@ -28,8 +28,7 @@ namespace Lykke.RabbitMqBroker.Subscriber.Middleware.ErrorHandling
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(
-                    $"Failed to handle the message from {context.Settings.GetSubscriberName()} for the first time. Retry in {_retryTimeout.Seconds} sec. Exception {ex}");
+                _logger.LogWarning($"Failed to handle the message. Retry in {_retryTimeout.TotalSeconds} sec. Exception {ex}");
 
                 // Retries loop
                 for (int i = 0; i < _retryNum; i++)
@@ -45,7 +44,7 @@ namespace Lykke.RabbitMqBroker.Subscriber.Middleware.ErrorHandling
                     catch (Exception ex2)
                     {
                         _logger.LogWarning(
-                            $"Failed to handle the message from {context.Settings.GetSubscriberName()} for the {i + 1} time. Retry in {_retryTimeout.Seconds} sec. Exception {ex2}");
+                            $"Retry attempt: failed to handle the message for the {i + 1} time. Retry in {_retryTimeout.TotalSeconds} sec. Exception {ex2}");
                     }
                 }
 
