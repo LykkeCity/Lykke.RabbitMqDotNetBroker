@@ -36,7 +36,6 @@ namespace Lykke.RabbitMqBroker.Publisher
             return builder.RegisterType<JsonRabbitPublisher<TMessage>>()
                 .As<IRabbitPublisher<TMessage>>()
                 .As<IStartable>()
-                .As<IStartStop>()
                 .WithParameter("connectionString", rabbitMqConnString)
                 .WithParameter("exchangeName", exchangeName)
                 .SingleInstance();
