@@ -28,12 +28,18 @@ namespace Lykke.RabbitMqBroker
         /// Count of silent reconnection attempts before write error message to the log. Default is - 20
         /// </summary>
         public int ReconnectionsCountToAlarm { get; set; }
+        /// <summary>
+        /// The confirmation period when publishing messages. The confirmation strategy will not be used
+        /// unless the value is provided explicitly. Check <see cref="UsePublisherConfirmation"/>. 
+        /// </summary>
+        public TimeSpan? PublisherConfirmationTimeout { get; set; }
 
         public RabbitMqSubscriptionSettings()
         {
             ReconnectionDelay = DefaultReconnectionDelay;
             ReconnectionsCountToAlarm = DefaultReconnectionsCountToAlarm;
             RoutingKey = string.Empty;
+            PublisherConfirmationTimeout = null;
         }
 
         /// <summary>
@@ -182,6 +188,13 @@ namespace Lykke.RabbitMqBroker
             };
         }
 
+        public RabbitMqSubscriptionSettings UsePublisherConfirmation(TimeSpan timeout)
+        {
+            PublisherConfirmationTimeout = timeout;
+
+            return this;
+        }
+        
         public RabbitMqSubscriptionSettings MakeDurable()
         {
             IsDurable = true;

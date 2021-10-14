@@ -2,6 +2,7 @@
 // Licensed under the MIT License. See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Threading;
 using Autofac;
@@ -41,6 +42,8 @@ namespace Lykke.RabbitMqBroker.Subscriber
         private IMessageReadStrategy _messageReadStrategy;
         private CancellationTokenSource _cancellationTokenSource;
         private MiddlewareQueue<TTopicModel> _middlewareQueue;
+        private readonly List<Action<IDictionary<string, object>>> _readHeadersActions = new List<Action<IDictionary<string, object>>>();
+
 
         public RabbitMqSubscriber(
             [NotNull] ILogger<RabbitMqSubscriber<TTopicModel>> logger,
@@ -112,6 +115,16 @@ namespace Lykke.RabbitMqBroker.Subscriber
             _prefetchCount = prefetchCount;
             return this;
         }
+        
+        public RabbitMqSubscriber<TTopicModel> SetReadHeadersAction(Action<IDictionary<string, object>> action)
+        {
+            if (action != null)
+            {
+                _readHeadersActions.Add(action);
+            }
+            return this;
+        }
+
 
         #endregion
 
@@ -203,6 +216,8 @@ namespace Lykke.RabbitMqBroker.Subscriber
             var tag = basicDeliverEventArgs.DeliveryTag;
             var ma = new MessageAcceptor(channel, tag);
 
+            _readHeadersActions.ForEach(x => x(basicDeliverEventArgs.BasicProperties?.Headers));
+            
             try
             {
                 var model = _messageDeserializer.Deserialize(basicDeliverEventArgs.Body);

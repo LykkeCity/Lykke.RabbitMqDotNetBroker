@@ -1,19 +1,14 @@
-﻿// Copyright (c) Lykke Corp.
-// Licensed under the MIT License. See the LICENSE file in the project root for more information.
-
 using System;
 using RabbitMQ.Client;
 
 namespace Lykke.RabbitMqBroker.Publisher.Strategies
 {
-    /// <summary>
-    /// Publish strategy for fanout exchange.
-    /// </summary>
-    public sealed class DefaultFanoutPublishStrategy : IRabbitMqPublishStrategy
+    public sealed class FanoutPublishStrategyWithConfirmations : IRabbitMqPublishStrategy
     {
         private readonly bool _durable;
+        private readonly TimeSpan _defaultConfirmationTimeout = TimeSpan.FromSeconds(5);
 
-        public DefaultFanoutPublishStrategy(RabbitMqSubscriptionSettings settings)
+        public FanoutPublishStrategyWithConfirmations(RabbitMqSubscriptionSettings settings)
         {
             if (settings == null)
                 throw new ArgumentNullException(nameof(settings));
@@ -24,6 +19,7 @@ namespace Lykke.RabbitMqBroker.Publisher.Strategies
         public void Configure(RabbitMqSubscriptionSettings settings, IModel channel)
         {
             channel.ExchangeDeclare(exchange: settings.ExchangeName, type: "fanout", durable: _durable);
+            channel.ConfirmSelect();
         }
 
         public void Publish(RabbitMqSubscriptionSettings settings, IModel channel, RawMessage message)
@@ -34,13 +30,13 @@ namespace Lykke.RabbitMqBroker.Publisher.Strategies
                 var props = channel.CreateBasicProperties();
                 props.Headers = message.Headers;
             }
-
+            
             channel.BasicPublish(
                 exchange: settings.ExchangeName,
-                // routingKey can't be null - I consider this as a bug in RabbitMQ.Client
                 routingKey: string.Empty,
                 basicProperties: basicProperties,
                 body: message.Body);
+            channel.WaitForConfirmsOrDie(settings.PublisherConfirmationTimeout ?? _defaultConfirmationTimeout);
         }
     }
 }
