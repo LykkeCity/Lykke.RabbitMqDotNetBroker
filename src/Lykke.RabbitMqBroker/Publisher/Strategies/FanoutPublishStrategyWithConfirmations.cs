@@ -24,10 +24,17 @@ namespace Lykke.RabbitMqBroker.Publisher.Strategies
 
         public void Publish(RabbitMqSubscriptionSettings settings, IModel channel, RawMessage message)
         {
+            IBasicProperties basicProperties = null;
+            if (message.Headers != null)
+            {
+                var props = channel.CreateBasicProperties();
+                props.Headers = message.Headers;
+            }
+            
             channel.BasicPublish(
                 exchange: settings.ExchangeName,
                 routingKey: string.Empty,
-                basicProperties: null,
+                basicProperties: basicProperties,
                 body: message.Body);
             channel.WaitForConfirmsOrDie(settings.PublisherConfirmationTimeout ?? _defaultConfirmationTimeout);
         }

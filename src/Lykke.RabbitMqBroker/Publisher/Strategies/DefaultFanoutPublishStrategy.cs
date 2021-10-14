@@ -28,11 +28,18 @@ namespace Lykke.RabbitMqBroker.Publisher.Strategies
 
         public void Publish(RabbitMqSubscriptionSettings settings, IModel channel, RawMessage message)
         {
+            IBasicProperties basicProperties = null;
+            if (message.Headers != null)
+            {
+                var props = channel.CreateBasicProperties();
+                props.Headers = message.Headers;
+            }
+
             channel.BasicPublish(
                 exchange: settings.ExchangeName,
                 // routingKey can't be null - I consider this as a bug in RabbitMQ.Client
                 routingKey: string.Empty,
-                basicProperties: null,
+                basicProperties: basicProperties,
                 body: message.Body);
         }
     }

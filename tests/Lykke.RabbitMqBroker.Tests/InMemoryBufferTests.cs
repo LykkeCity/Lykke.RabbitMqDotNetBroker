@@ -43,8 +43,8 @@ namespace Lykke.RabbitMqBroker.Tests
             var writeTasks = Enumerable.Range(0, 10).Select(i =>
                 Task.Factory.StartNew(() =>
                 {
-                    buffer.Enqueue(new RawMessage(new byte[0], string.Empty), cts.Token);
-                    buffer.Enqueue(new RawMessage(new byte[0], string.Empty), cts.Token);
+                    buffer.Enqueue(new RawMessage(new byte[0], string.Empty, null), cts.Token);
+                    buffer.Enqueue(new RawMessage(new byte[0], string.Empty, null), cts.Token);
                 })
             );
 

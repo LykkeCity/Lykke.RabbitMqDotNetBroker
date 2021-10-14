@@ -34,6 +34,7 @@ namespace Lykke.RabbitMqBroker.Publisher
         private bool _disableQueuePersistence;
         private bool _publishSynchronously;
         private bool _disposed;
+        private List<Func<IDictionary<string, object>>> _writeHeadersFuns;
 
         private IRawMessagePublisher _rawPublisher;
         private IPublisherBuffer _bufferOverriding;
@@ -176,6 +177,22 @@ namespace Lykke.RabbitMqBroker.Publisher
             _publishStrategy = publishStrategy;
             return this;
         }
+        
+        public RabbitMqPublisher<TMessageModel> SetWriteHeadersFunc(Func<IDictionary<string, object>> func)
+        {
+            if (_writeHeadersFuns == null)
+            {
+                _writeHeadersFuns = new List<Func<IDictionary<string, object>>>();
+            }
+
+            if (func != null)
+            {
+                _writeHeadersFuns.Add(func);
+            }
+
+            return this;
+        }
+
 
         #endregion
 
@@ -225,7 +242,7 @@ namespace Lykke.RabbitMqBroker.Publisher
 
             var body = _serializer.Serialize(message);
 
-            return _deferredMessagesManager.DeferAsync(new RawMessage(body, routingKey), deliverAt);
+            return _deferredMessagesManager.DeferAsync(new RawMessage(body, routingKey, GetMessageHeaders()), deliverAt);
         }
 
         /// <summary>
@@ -247,7 +264,7 @@ namespace Lykke.RabbitMqBroker.Publisher
 
             var body = _serializer.Serialize(message);
 
-            _rawPublisher.Produce(new RawMessage(body, routingKey));
+            _rawPublisher.Produce(new RawMessage(body, routingKey, GetMessageHeaders()));
 
             return Task.CompletedTask;
         }
@@ -414,6 +431,38 @@ namespace Lykke.RabbitMqBroker.Publisher
 
 
         #region Private stuff
+        
+        private IDictionary<string, object> GetMessageHeaders()
+        {
+            if (_writeHeadersFuns == null)
+            {
+                return null;
+            }
+
+            var keyValuePairs = _writeHeadersFuns
+                .Select(x => x())
+                .Where(x => x != null && x.Any())
+                .SelectMany(x => x);
+
+            if (keyValuePairs.Any())
+            {
+                var result = new Dictionary<string, object>();
+                foreach (var keyValuePair in keyValuePairs)
+                {
+                    if (result.ContainsKey(keyValuePair.Key))
+                    {
+                        _log.LogError($"Header with key '{keyValuePair.Key}' already exists. Discarded value is '${keyValuePair.Value}'. Please, use unique headers only.");
+                    }
+                    else
+                    {
+                        result.Add(keyValuePair.Key, keyValuePair.Value);
+                    }
+                }
+                return result;
+            }
+            return null;
+        }
+
 
         private void ThrowIfStarted()
         {
