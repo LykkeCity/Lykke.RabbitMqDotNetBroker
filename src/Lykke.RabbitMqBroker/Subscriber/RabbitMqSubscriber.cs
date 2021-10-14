@@ -42,7 +42,7 @@ namespace Lykke.RabbitMqBroker.Subscriber
         private IMessageReadStrategy _messageReadStrategy;
         private CancellationTokenSource _cancellationTokenSource;
         private MiddlewareQueue<TTopicModel> _middlewareQueue;
-        private List<Action<IDictionary<string, object>>> _readHeadersActions;
+        private readonly List<Action<IDictionary<string, object>>> _readHeadersActions = new List<Action<IDictionary<string, object>>>();
 
 
         public RabbitMqSubscriber(
@@ -118,16 +118,10 @@ namespace Lykke.RabbitMqBroker.Subscriber
         
         public RabbitMqSubscriber<TTopicModel> SetReadHeadersAction(Action<IDictionary<string, object>> action)
         {
-            if (_readHeadersActions == null)
-            {
-                _readHeadersActions = new List<Action<IDictionary<string, object>>>();
-            }
-
             if (action != null)
             {
                 _readHeadersActions.Add(action);
             }
-
             return this;
         }
 
@@ -222,10 +216,7 @@ namespace Lykke.RabbitMqBroker.Subscriber
             var tag = basicDeliverEventArgs.DeliveryTag;
             var ma = new MessageAcceptor(channel, tag);
 
-            if (_readHeadersActions != null)
-            {
-                _readHeadersActions.ForEach(x => x(basicDeliverEventArgs.BasicProperties?.Headers));
-            }
+            _readHeadersActions.ForEach(x => x(basicDeliverEventArgs.BasicProperties?.Headers));
             
             try
             {

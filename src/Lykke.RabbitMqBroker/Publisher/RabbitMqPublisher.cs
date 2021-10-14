@@ -34,7 +34,7 @@ namespace Lykke.RabbitMqBroker.Publisher
         private bool _disableQueuePersistence;
         private bool _publishSynchronously;
         private bool _disposed;
-        private List<Func<IDictionary<string, object>>> _writeHeadersFuns;
+        private readonly List<Func<IDictionary<string, object>>> _writeHeadersFunсs = new List<Func<IDictionary<string, object>>>();
 
         private IRawMessagePublisher _rawPublisher;
         private IPublisherBuffer _bufferOverriding;
@@ -180,16 +180,10 @@ namespace Lykke.RabbitMqBroker.Publisher
         
         public RabbitMqPublisher<TMessageModel> SetWriteHeadersFunc(Func<IDictionary<string, object>> func)
         {
-            if (_writeHeadersFuns == null)
-            {
-                _writeHeadersFuns = new List<Func<IDictionary<string, object>>>();
-            }
-
             if (func != null)
             {
-                _writeHeadersFuns.Add(func);
+                _writeHeadersFunсs.Add(func);
             }
-
             return this;
         }
 
@@ -434,19 +428,15 @@ namespace Lykke.RabbitMqBroker.Publisher
         
         private IDictionary<string, object> GetMessageHeaders()
         {
-            if (_writeHeadersFuns == null)
-            {
-                return null;
-            }
-
-            var keyValuePairs = _writeHeadersFuns
+            var result = new Dictionary<string, object>();
+            
+            var keyValuePairs = _writeHeadersFunсs
                 .Select(x => x())
                 .Where(x => x != null && x.Any())
                 .SelectMany(x => x);
 
             if (keyValuePairs.Any())
             {
-                var result = new Dictionary<string, object>();
                 foreach (var keyValuePair in keyValuePairs)
                 {
                     if (result.ContainsKey(keyValuePair.Key))
@@ -458,9 +448,9 @@ namespace Lykke.RabbitMqBroker.Publisher
                         result.Add(keyValuePair.Key, keyValuePair.Value);
                     }
                 }
-                return result;
             }
-            return null;
+            
+            return result;
         }
 
 
