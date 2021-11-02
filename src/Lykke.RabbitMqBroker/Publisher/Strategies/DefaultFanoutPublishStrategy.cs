@@ -31,8 +31,8 @@ namespace Lykke.RabbitMqBroker.Publisher.Strategies
             IBasicProperties basicProperties = null;
             if (message.Headers != null)
             {
-                var props = channel.CreateBasicProperties();
-                props.Headers = message.Headers;
+                basicProperties = channel.CreateBasicProperties();
+                basicProperties.Headers = message.Headers;
             }
 
             channel.BasicPublish(
