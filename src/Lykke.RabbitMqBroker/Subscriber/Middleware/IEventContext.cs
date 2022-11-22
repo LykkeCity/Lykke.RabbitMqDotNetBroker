@@ -1,12 +1,16 @@
-﻿using System.Threading;
+﻿using System;
+using System.Threading;
 using System.Threading.Tasks;
-using RabbitMQ.Client.Events;
+using JetBrains.Annotations;
+using RabbitMQ.Client;
 
 namespace Lykke.RabbitMqBroker.Subscriber.Middleware
 {
     public interface IEventContext<out T>
     {
-        BasicDeliverEventArgs BasicDeliverEventArgs { get; }
+        ReadOnlyMemory<byte> Body { get; }
+        
+        [CanBeNull] IBasicProperties BasicProperties { get; }
 
         T Event { get; }
 

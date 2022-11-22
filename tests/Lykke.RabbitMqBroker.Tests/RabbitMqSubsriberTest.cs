@@ -18,13 +18,13 @@ namespace Lykke.RabbitMqBroker.Tests
     [Explicit]
     internal sealed class RabbitMqSubsriberTest : RabbitMqPublisherSubscriberBaseTest
     {
-        private RabbitMqSubscriber<string> _subscriber;
+        private RabbitMqPullingSubscriber<string> _pullingSubscriber;
 
         [SetUp]
         public void SetUp()
         {
-            _subscriber = new RabbitMqSubscriber<string>(
-                    new NullLogger<RabbitMqSubscriber<string>>(),
+            _pullingSubscriber = new RabbitMqPullingSubscriber<string>(
+                    new NullLogger<RabbitMqPullingSubscriber<string>>(),
                     _settings)
                 .UseMiddleware(new ExceptionSwallowMiddleware<string>(new NullLogger<ExceptionSwallowMiddleware<string>>()))
                 .CreateDefaultBinding()
@@ -45,9 +45,9 @@ namespace Lykke.RabbitMqBroker.Tests
                 completeLock.Set();
                 return Task.CompletedTask;
             });
-            _subscriber.Subscribe(handler);
+            _pullingSubscriber.Subscribe(handler);
 
-            _subscriber.Start();
+            _pullingSubscriber.Start();
 
             PublishToQueue(expected);
 
@@ -58,8 +58,8 @@ namespace Lykke.RabbitMqBroker.Tests
         [Test]
         public void ShouldUseDeadLetterQueueOnException()
         {
-            _subscriber = new RabbitMqSubscriber<string>(
-                    new NullLogger<RabbitMqSubscriber<string>>(),
+            _pullingSubscriber = new RabbitMqPullingSubscriber<string>(
+                    new NullLogger<RabbitMqPullingSubscriber<string>>(),
                     _settings)
                 .UseMiddleware(new ExceptionSwallowMiddleware<string>(new NullLogger<ExceptionSwallowMiddleware<string>>()))
                 .CreateDefaultBinding()
@@ -76,8 +76,8 @@ namespace Lykke.RabbitMqBroker.Tests
                 completeLock.Set();
                 throw new Exception();
             });
-            _subscriber.Subscribe(handler);
-            _subscriber.Start();
+            _pullingSubscriber.Subscribe(handler);
+            _pullingSubscriber.Start();
 
             completeLock.Wait();
 
@@ -89,7 +89,7 @@ namespace Lykke.RabbitMqBroker.Tests
         [TearDown]
         public void TearDown()
         {
-            _subscriber.Stop();
+            _pullingSubscriber.Stop();
         }
 
         private void PublishToQueue(string message)

@@ -15,7 +15,6 @@ using Microsoft.Extensions.PlatformAbstractions;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using RabbitMQ.Client;
-using RabbitMQ.Client.Events;
 
 namespace Lykke.RabbitMqBroker.Subscriber
 {
@@ -23,7 +22,7 @@ namespace Lykke.RabbitMqBroker.Subscriber
     /// Generic rabbitMq subscriber
     /// </summary>
     [PublicAPI]
-    public class RabbitMqSubscriber<TTopicModel> : IStartStop
+    public class RabbitMqPullingSubscriber<TTopicModel> : IStartStop
     {
         private readonly RabbitMqSubscriptionSettings _settings;
         private readonly string _exchangeQueueName;
@@ -35,7 +34,7 @@ namespace Lykke.RabbitMqBroker.Subscriber
         private string _alternativeExchangeConnString;
         private int _reconnectionsInARowCount;
         private ushort? _prefetchCount;
-        private ILogger<RabbitMqSubscriber<TTopicModel>> _logger;
+        private ILogger<RabbitMqPullingSubscriber<TTopicModel>> _logger;
         private Thread _thread;
         private Thread _alternateThread;
         private IMessageDeserializer<TTopicModel> _messageDeserializer;
@@ -45,8 +44,8 @@ namespace Lykke.RabbitMqBroker.Subscriber
         private readonly List<Action<IDictionary<string, object>>> _readHeadersActions = new List<Action<IDictionary<string, object>>>();
 
 
-        public RabbitMqSubscriber(
-            [NotNull] ILogger<RabbitMqSubscriber<TTopicModel>> logger,
+        public RabbitMqPullingSubscriber(
+            [NotNull] ILogger<RabbitMqPullingSubscriber<TTopicModel>> logger,
             [NotNull] RabbitMqSubscriptionSettings settings)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -57,40 +56,40 @@ namespace Lykke.RabbitMqBroker.Subscriber
 
         #region Configurator
 
-        public RabbitMqSubscriber<TTopicModel> SetMessageDeserializer(
+        public RabbitMqPullingSubscriber<TTopicModel> SetMessageDeserializer(
             IMessageDeserializer<TTopicModel> messageDeserializer)
         {
             _messageDeserializer = messageDeserializer;
             return this;
         }
 
-        public RabbitMqSubscriber<TTopicModel> Subscribe(Func<TTopicModel, Task> callback)
+        public RabbitMqPullingSubscriber<TTopicModel> Subscribe(Func<TTopicModel, Task> callback)
         {
             _eventHandler = callback;
             _cancellableEventHandler = null;
             return this;
         }
 
-        public RabbitMqSubscriber<TTopicModel> Subscribe(Func<TTopicModel, CancellationToken, Task> callback)
+        public RabbitMqPullingSubscriber<TTopicModel> Subscribe(Func<TTopicModel, CancellationToken, Task> callback)
         {
             _cancellableEventHandler = callback;
             _eventHandler = null;
             return this;
         }
 
-        public RabbitMqSubscriber<TTopicModel> SetMessageReadStrategy(IMessageReadStrategy messageReadStrategy)
+        public RabbitMqPullingSubscriber<TTopicModel> SetMessageReadStrategy(IMessageReadStrategy messageReadStrategy)
         {
             _messageReadStrategy = messageReadStrategy;
             return this;
         }
 
-        public RabbitMqSubscriber<TTopicModel> CreateDefaultBinding()
+        public RabbitMqPullingSubscriber<TTopicModel> CreateDefaultBinding()
         {
             SetMessageReadStrategy(new MessageReadWithTemporaryQueueStrategy());
             return this;
         }
 
-        public RabbitMqSubscriber<TTopicModel> SetAlternativeExchange(string connString)
+        public RabbitMqPullingSubscriber<TTopicModel> SetAlternativeExchange(string connString)
         {
             if (!string.IsNullOrWhiteSpace(connString))
             {
@@ -101,7 +100,7 @@ namespace Lykke.RabbitMqBroker.Subscriber
             return this;
         }
 
-        public RabbitMqSubscriber<TTopicModel> UseMiddleware(IEventMiddleware<TTopicModel> middleware)
+        public RabbitMqPullingSubscriber<TTopicModel> UseMiddleware(IEventMiddleware<TTopicModel> middleware)
         {
             if (!IsStopped())
                 throw new InvalidOperationException("New middleware can't be added after subscriber Start");
@@ -110,13 +109,13 @@ namespace Lykke.RabbitMqBroker.Subscriber
             return this;
         }
 
-        public RabbitMqSubscriber<TTopicModel> SetPrefetchCount(ushort prefetchCount)
+        public RabbitMqPullingSubscriber<TTopicModel> SetPrefetchCount(ushort prefetchCount)
         {
             _prefetchCount = prefetchCount;
             return this;
         }
         
-        public RabbitMqSubscriber<TTopicModel> SetReadHeadersAction(Action<IDictionary<string, object>> action)
+        public RabbitMqPullingSubscriber<TTopicModel> SetReadHeadersAction(Action<IDictionary<string, object>> action)
         {
             if (action != null)
             {
@@ -174,6 +173,7 @@ namespace Lykke.RabbitMqBroker.Subscriber
             _logger.LogInformation($"{settings.GetSubscriberName()}: Trying to connect to {factory.Endpoint} ({_exchangeQueueName})");
 
             var cn = $"[Sub] {PlatformServices.Default.Application.ApplicationName} {PlatformServices.Default.Application.ApplicationVersion} to {_exchangeQueueName}";
+            
             using (var connection = factory.CreateConnection(cn))
             using (var channel = connection.CreateModel())
             {
@@ -184,11 +184,6 @@ namespace Lykke.RabbitMqBroker.Subscriber
 
                 var queueName = _messageReadStrategy.Configure(settings, channel);
 
-                var consumer = new QueueingBasicConsumer(channel);
-                var tag = channel.BasicConsume(queueName, false, consumer);
-
-                //consumer.Received += MessageReceived;
-
                 while (!IsStopped())
                 {
                     if (!connection.IsOpen)
@@ -196,43 +191,41 @@ namespace Lykke.RabbitMqBroker.Subscriber
                         throw new RabbitMqBrokerException($"{settings.GetSubscriberName()}: connection to {connection.Endpoint} is closed");
                     }
 
-                    var delivered = consumer.Queue.Dequeue(2000, out var eventArgs);
+                    var result = channel.BasicGet(queueName, false);
 
                     _reconnectionsInARowCount = 0;
 
-                    if (delivered)
+                    if (result != null)
                     {
-                        MessageReceived(eventArgs, channel);
+                        MessageReceived(channel, result);
                     }
                 }
-
-                channel.BasicCancel(tag);
-                connection.Close();
             }
         }
 
-        private void MessageReceived(BasicDeliverEventArgs basicDeliverEventArgs, IModel channel)
+        private void MessageReceived(IModel channel, BasicGetResult result)
         {
-            var tag = basicDeliverEventArgs.DeliveryTag;
-            var ma = new MessageAcceptor(channel, tag);
+            var ma = new MessageAcceptor(channel, result.DeliveryTag);
 
-            _readHeadersActions.ForEach(x => x(basicDeliverEventArgs.BasicProperties?.Headers));
+            _readHeadersActions.ForEach(x => x(result.BasicProperties?.Headers));
             
             try
             {
-                var model = _messageDeserializer.Deserialize(basicDeliverEventArgs.Body);
+                var model = _messageDeserializer.Deserialize(result.Body.ToArray());
 
                 try
                 {
                     _middlewareQueue.RunMiddlewaresAsync(
-                        basicDeliverEventArgs,
-                        model,
-                        ma,
-                        _cancellationTokenSource.Token)
+                            result.Body,
+                            result.BasicProperties,
+                            model,
+                            ma,
+                            _cancellationTokenSource.Token)
                         .GetAwaiter().GetResult();
                 }
-                catch (OperationCanceledException)
+                catch (OperationCanceledException ex)
                 {
+                    _logger.LogError(ex, "Middleware queue processing was cancelled");
                 }
             }
             catch (Exception ex)
@@ -248,7 +241,7 @@ namespace Lykke.RabbitMqBroker.Subscriber
             Start();
         }
 
-        public RabbitMqSubscriber<TTopicModel> Start()
+        public RabbitMqPullingSubscriber<TTopicModel> Start()
         {
             if (_messageDeserializer == null)
                 throw new InvalidOperationException("Please, specify message deserializer");

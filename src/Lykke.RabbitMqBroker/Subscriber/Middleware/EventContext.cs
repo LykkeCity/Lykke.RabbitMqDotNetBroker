@@ -1,6 +1,8 @@
-﻿using System.Threading;
+﻿using System;
+using System.Threading;
 using System.Threading.Tasks;
-using RabbitMQ.Client.Events;
+using JetBrains.Annotations;
+using RabbitMQ.Client;
 
 namespace Lykke.RabbitMqBroker.Subscriber.Middleware
 {
@@ -9,14 +11,16 @@ namespace Lykke.RabbitMqBroker.Subscriber.Middleware
         private readonly int _middlewareQueueIndex;
         private readonly IMiddlewareQueue<T> _middlewareQueue;
 
-        public BasicDeliverEventArgs BasicDeliverEventArgs { get; }
+        public ReadOnlyMemory<byte> Body { get; }
+        [CanBeNull] public IBasicProperties BasicProperties { get; }
         public T Event { get; }
         public IMessageAcceptor MessageAcceptor { get; }
         public RabbitMqSubscriptionSettings Settings { get; }
         public CancellationToken CancellationToken { get; }
 
         internal EventContext(
-            BasicDeliverEventArgs basicDeliverEventArgs,
+            ReadOnlyMemory<byte> body,
+            [CanBeNull] IBasicProperties properties,
             T evt,
             IMessageAcceptor ma,
             RabbitMqSubscriptionSettings settings,
@@ -24,12 +28,12 @@ namespace Lykke.RabbitMqBroker.Subscriber.Middleware
             IMiddlewareQueue<T> middlewareQueue,
             CancellationToken cancellationToken)
         {
-            BasicDeliverEventArgs = basicDeliverEventArgs;
             Event = evt;
             MessageAcceptor = ma;
             Settings = settings;
             CancellationToken = cancellationToken;
-
+            Body = body;
+            BasicProperties = properties;
             _middlewareQueueIndex = middlewareQueueIndex;
             _middlewareQueue = middlewareQueue;
         }
@@ -38,7 +42,8 @@ namespace Lykke.RabbitMqBroker.Subscriber.Middleware
         {
             var next = _middlewareQueue.GetNext(_middlewareQueueIndex);
             var contextForNext = new EventContext<T>(
-                BasicDeliverEventArgs,
+                Body,
+                BasicProperties,
                 Event,
                 MessageAcceptor,
                 Settings,

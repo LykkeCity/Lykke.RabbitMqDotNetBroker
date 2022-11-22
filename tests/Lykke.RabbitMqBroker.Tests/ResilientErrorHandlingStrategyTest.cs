@@ -37,7 +37,7 @@ namespace Lykke.RabbitMqBroker.Tests
             middlewarequeue.AddMiddleware(_middleware);
             middlewarequeue.AddMiddleware(new ActualHandlerMiddleware<string>(_ => Task.CompletedTask));
 
-            middlewarequeue.RunMiddlewaresAsync(null, null, acceptor, CancellationToken.None).GetAwaiter().GetResult();
+            middlewarequeue.RunMiddlewaresAsync(null, null, null, acceptor, CancellationToken.None).GetAwaiter().GetResult();
 
             acceptor.Received(1).Accept();
         }
