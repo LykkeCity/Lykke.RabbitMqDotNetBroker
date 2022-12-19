@@ -32,7 +32,7 @@ namespace Lykke.RabbitMqBroker.Tests
             _publisher = new RabbitMqPublisher<string>(new NullLoggerFactory(), settings);
 
             _publisher
-                .SetPublishStrategy(new DefaultFanoutPublishStrategy(settings))
+                .SetPublishStrategy(new FanoutPublishStrategy(settings))
                 .SetSerializer(new JsonMessageSerializer<string>());
         }
 

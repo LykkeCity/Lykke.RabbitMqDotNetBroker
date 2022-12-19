@@ -156,7 +156,7 @@ namespace Lykke.RabbitMqBroker.Publisher
             using (var channel = connection.CreateModel())
             {
                 _logger.LogInformation($"{Name}: connected to {factory.Endpoint} ({_exchangeQueueName})");
-                _publishStrategy.Configure(_settings, channel);
+                _publishStrategy.Configure(channel);
 
                 while (!IsStopped())
                 {
@@ -185,7 +185,7 @@ namespace Lykke.RabbitMqBroker.Publisher
                         var telemetryOperation = InitTelemetryOperation(message);
                         try
                         {
-                            _publishStrategy.Publish(_settings, channel, message);
+                            _publishStrategy.Publish(channel, message);
                         }
                         catch (Exception e)
                         {
@@ -200,7 +200,7 @@ namespace Lykke.RabbitMqBroker.Publisher
                     }
                     else
                     {
-                        _publishStrategy.Publish(_settings, channel, message);
+                        _publishStrategy.Publish(channel, message);
                     }
 
                     _buffer.Dequeue(_cancellationTokenSource.Token);

@@ -39,7 +39,7 @@ namespace Lykke.RabbitMqBroker.Publisher
 
             _rabbitMqPublisher = new RabbitMqPublisher<TMessage>(_loggerFactory, settings)
                 .SetSerializer(new JsonMessageSerializer<TMessage>())
-                .SetPublishStrategy(new DefaultFanoutPublishStrategy(settings))
+                .SetPublishStrategy(new FanoutPublishStrategy(settings))
                 .PublishSynchronously();
             _rabbitMqPublisher.Start();
         }
