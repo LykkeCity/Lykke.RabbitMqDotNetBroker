@@ -304,7 +304,7 @@ namespace Lykke.RabbitMqBroker.Publisher
             }
             if (_publishStrategy == null)
             {
-                SetPublishStrategy(new DefaultFanoutPublishStrategy(_settings));
+                SetPublishStrategy(new FanoutPublishStrategy(_settings));
             }
 
             var messagesBuffer = _bufferOverriding ?? LoadQueue();

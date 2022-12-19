@@ -21,7 +21,7 @@ namespace Lykke.RabbitMqBroker.Tests
             _publisher = new RabbitMqPublisher<string>(new NullLoggerFactory(), _settings);
 
             _publisher
-                .SetPublishStrategy(new DefaultFanoutPublishStrategy(_settings))
+                .SetPublishStrategy(new FanoutPublishStrategy(_settings))
                 .DisableInMemoryQueuePersistence()
                 .SetSerializer(new TestMessageSerializer());
         }
@@ -97,7 +97,7 @@ namespace Lykke.RabbitMqBroker.Tests
             const string expected = "GetDefaultHost message";
 
 
-            _publisher.SetPublishStrategy(new DefaultFanoutPublishStrategy(_settings));
+            _publisher.SetPublishStrategy(new FanoutPublishStrategy(_settings));
 
             _publisher.Start();
 

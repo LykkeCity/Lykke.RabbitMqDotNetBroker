@@ -12,16 +12,16 @@ namespace Lykke.RabbitMqBroker.Publisher.Strategies
         {
         }
 
-        public override void Configure(RabbitMqSubscriptionSettings settings, IModel channel)
+        public override void Configure(IModel channel)
         {
-            base.Configure(settings, channel);
+            base.Configure(channel);
             channel.ConfirmSelect();
         }
 
-        public override void Publish(RabbitMqSubscriptionSettings settings, IModel channel, RawMessage message)
+        public override void Publish(IModel channel, RawMessage message)
         {
-            base.Publish(settings, channel, message);
-            channel.WaitForConfirmsOrDie(settings.PublisherConfirmationTimeout ?? _defaultConfirmationTimeout);
+            base.Publish(channel, message);
+            channel.WaitForConfirmsOrDie(Settings.PublisherConfirmationTimeout ?? _defaultConfirmationTimeout);
         }
     }
 }

@@ -25,7 +25,7 @@ namespace Lykke.RabbitMqBroker.Tests
             _publisher = new RabbitMqPublisher<string>(new NullLoggerFactory(), _settings);
 
             _publisher
-                .SetPublishStrategy(new DefaultFanoutPublishStrategy(_settings))
+                .SetPublishStrategy(new FanoutPublishStrategy(_settings))
                 .DisableInMemoryQueuePersistence()
                 .SetSerializer(new TestMessageSerializer());
         }
@@ -57,7 +57,7 @@ namespace Lykke.RabbitMqBroker.Tests
             var publisher = new RabbitMqPublisher<ComplexType>(new NullLoggerFactory(), _settings);
 
             publisher
-                .SetPublishStrategy(new DefaultFanoutPublishStrategy(_settings))
+                .SetPublishStrategy(new FanoutPublishStrategy(_settings))
                 .DisableInMemoryQueuePersistence()
                 .SetSerializer(new JsonMessageSerializer<ComplexType>())
                 .Start();
@@ -84,7 +84,7 @@ namespace Lykke.RabbitMqBroker.Tests
             _publisher.PublishSynchronously();
             _publisher.Start();
 
-            pubStrategy.When(m => m.Publish(Arg.Any<RabbitMqSubscriptionSettings>(), Arg.Any<IModel>(), Arg.Any<RawMessage>())).Throw<InvalidOperationException>();
+            pubStrategy.When(m => m.Publish(Arg.Any<IModel>(), Arg.Any<RawMessage>())).Throw<InvalidOperationException>();
 
             Assert.Throws<RabbitMqBrokerException>(() => _publisher.ProduceAsync(string.Empty).Wait());
         }

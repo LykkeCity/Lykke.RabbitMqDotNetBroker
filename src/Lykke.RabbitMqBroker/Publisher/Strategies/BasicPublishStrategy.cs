@@ -5,26 +5,21 @@ namespace Lykke.RabbitMqBroker.Publisher.Strategies
 {
     public abstract class BasicPublishStrategy : IRabbitMqPublishStrategy
     {
+        protected readonly RabbitMqSubscriptionSettings Settings;
         protected readonly string ExchangeType;
-        protected readonly bool Durable;
-        protected readonly string RoutingKey;
 
         internal BasicPublishStrategy(RabbitMqSubscriptionSettings settings, string exchangeType)
         {
-            if (settings == null)
-                throw new ArgumentNullException(nameof(settings));
+            Settings = settings ?? throw new ArgumentNullException(nameof(settings));
             ExchangeType = exchangeType;
-
-            Durable = settings.IsDurable;
-            RoutingKey = settings.RoutingKey ?? string.Empty;
         }
 
-        public virtual void Configure(RabbitMqSubscriptionSettings settings, IModel channel)
+        public virtual void Configure(IModel channel)
         {
-            channel.ExchangeDeclare(exchange: settings.ExchangeName, type: ExchangeType, durable: Durable);
+            channel.ExchangeDeclare(exchange: Settings.ExchangeName, type: ExchangeType, durable: Settings.IsDurable);
         }
 
-        public virtual void Publish(RabbitMqSubscriptionSettings settings, IModel channel, RawMessage message)
+        public virtual void Publish(IModel channel, RawMessage message)
         {
             IBasicProperties basicProperties = null;
             if (message.Headers != null)
@@ -34,7 +29,7 @@ namespace Lykke.RabbitMqBroker.Publisher.Strategies
             }
 
             channel.BasicPublish(
-                exchange: settings.ExchangeName,
+                exchange: Settings.ExchangeName,
                 routingKey: GetRoutingKey(message),
                 basicProperties: basicProperties,
                 body: message.Body);
@@ -42,7 +37,7 @@ namespace Lykke.RabbitMqBroker.Publisher.Strategies
 
         protected virtual string GetRoutingKey(RawMessage message)
         {
-            return message.RoutingKey ?? RoutingKey;
+            return message.RoutingKey ?? Settings.RoutingKey ?? string.Empty;
         }
     }
 }
