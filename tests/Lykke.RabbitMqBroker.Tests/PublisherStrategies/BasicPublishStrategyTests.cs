@@ -52,7 +52,7 @@ namespace Lykke.RabbitMqBroker.Tests.PublisherStrategies
             var settings = RabbitMqSubscriptionSettings.ForPublisher("connectionString", "endpoint");
             var strategy = ctor(settings);
             var channel = new Mock<IModel>();
-            channel.Setup(x => x.CreateBasicProperties()).Returns(new BasicProperties());
+            channel.Setup(x => x.CreateBasicProperties()).Returns(new DumbBasicProperties());
 
             var header = "hello-header";
             var headerValue = "hello-world";
