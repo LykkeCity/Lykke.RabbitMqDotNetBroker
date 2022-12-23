@@ -1,6 +1,8 @@
-﻿using System.Threading;
+﻿using System;
+using System.Threading;
 using System.Threading.Tasks;
-using RabbitMQ.Client.Events;
+using JetBrains.Annotations;
+using RabbitMQ.Client;
 
 namespace Lykke.RabbitMqBroker.Subscriber.Middleware
 {
@@ -9,7 +11,8 @@ namespace Lykke.RabbitMqBroker.Subscriber.Middleware
         void AddMiddleware(IEventMiddleware<T> middleware);
 
         Task RunMiddlewaresAsync(
-            BasicDeliverEventArgs basicDeliverEventArgs,
+            ReadOnlyMemory<byte> body,
+            [CanBeNull] IBasicProperties properties,
             T evt,
             IMessageAcceptor ma,
             CancellationToken cancellationToken);

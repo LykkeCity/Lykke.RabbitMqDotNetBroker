@@ -38,22 +38,16 @@ namespace Lykke.RabbitMqBroker.Tests.Deduplication
             middlewarequeue.AddMiddleware(lastMiddleware);
 
             middlewarequeue.RunMiddlewaresAsync(
-                new BasicDeliverEventArgs
-                {
-                    BasicProperties = new BasicProperties(),
-                    Body = value
-                },
-                null,
-                acceptor,
-                CancellationToken.None)
+                    value,
+                    null,
+                    null,
+                    acceptor,
+                    CancellationToken.None)
                 .GetAwaiter().GetResult();
 
             middlewarequeue.RunMiddlewaresAsync(
-                    new BasicDeliverEventArgs
-                    {
-                        BasicProperties = new BasicProperties(),
-                        Body = value
-                    },
+                    value,
+                    null,
                     null,
                     acceptor,
                     CancellationToken.None)

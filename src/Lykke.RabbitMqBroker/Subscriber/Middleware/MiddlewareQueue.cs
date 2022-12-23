@@ -3,7 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using RabbitMQ.Client.Events;
+using JetBrains.Annotations;
+using RabbitMQ.Client;
 
 namespace Lykke.RabbitMqBroker.Subscriber.Middleware
 {
@@ -23,13 +24,15 @@ namespace Lykke.RabbitMqBroker.Subscriber.Middleware
         }
 
         public Task RunMiddlewaresAsync(
-            BasicDeliverEventArgs basicDeliverEventArgs,
+            ReadOnlyMemory<byte> body,
+            [CanBeNull] IBasicProperties properties,
             T evt,
             IMessageAcceptor ma,
             CancellationToken cancellationToken)
         {
             var context = new EventContext<T>(
-                basicDeliverEventArgs,
+                body,
+                properties,
                 evt,
                 ma,
                 _settings,

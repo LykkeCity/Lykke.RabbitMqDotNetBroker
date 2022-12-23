@@ -24,15 +24,16 @@ namespace Lykke.RabbitMqBroker.Subscriber.Middleware.Deduplication
 
         public Task ProcessAsync(IEventContext<T> context)
         {
-            var deduplicationHeaderBytes = string.IsNullOrEmpty(_deduplicatorHeader)
-                || !context.BasicDeliverEventArgs.BasicProperties.Headers.ContainsKey(_deduplicatorHeader)
+            var containsHeader = context.BasicProperties?.Headers.ContainsKey(_deduplicatorHeader) ?? false;
+            
+            var deduplicationHeaderBytes = string.IsNullOrEmpty(_deduplicatorHeader) || !containsHeader
                 ? Array.Empty<byte>()
                 : Encoding.UTF8.GetBytes(
                     JsonConvert.SerializeObject(
-                        context.BasicDeliverEventArgs.BasicProperties.Headers[_deduplicatorHeader],
+                        context.BasicProperties.Headers[_deduplicatorHeader],
                         new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore }));
             var deduplicationBytes = deduplicationHeaderBytes.Length == 0
-                ? context.BasicDeliverEventArgs.Body
+                ? context.Body.ToArray()
                 : deduplicationHeaderBytes;
 
             var hash = HashHelper.GetMd5Hash(deduplicationBytes);

@@ -72,21 +72,19 @@ namespace Lykke.RabbitMqBroker.Tests
             using (var connection = _factory.CreateConnection())
             using (var channel = connection.CreateModel())
             {
-                var consumer = new QueueingBasicConsumer(channel);
-                channel.BasicConsume(queueName, false, consumer);
-                if (consumer.Queue.Dequeue(1000, out var eventArgs))
+                var result = channel.BasicGet(queueName, ack);
+                if (result != null)
                 {
-
                     if (ack)
                     {
-                        channel.BasicAck(eventArgs.DeliveryTag, false);
+                        channel.BasicAck(result.DeliveryTag, false);
                     }
                     else
                     {
-                        channel.BasicReject(eventArgs.DeliveryTag, false);
+                        channel.BasicReject(result.DeliveryTag, false);
                     }
 
-                    return Encoding.UTF8.GetString(eventArgs.Body);
+                    return Encoding.UTF8.GetString(result.Body.ToArray());
                 }
                 return string.Empty;
             }

@@ -21,7 +21,7 @@ namespace Lykke.RabbitMqBroker.Subscriber
         private readonly ushort _prefetchCount;
         private readonly bool _sendTelemetry;
 
-        private RabbitMqSubscriber<TMessage> _subscriber;
+        private RabbitMqPullingSubscriber<TMessage> _pullingSubscriber;
 
         protected JsonRabbitSubscriber(
             RabbitMqSubscriptionSettings settings,
@@ -80,8 +80,8 @@ namespace Lykke.RabbitMqBroker.Subscriber
         /// <inheritdoc cref="IStartable.Start"/>
         public void Start()
         {
-            _subscriber = new RabbitMqSubscriber<TMessage>(
-                    _loggerFactory.CreateLogger<RabbitMqSubscriber<TMessage>>(),
+            _pullingSubscriber = new RabbitMqPullingSubscriber<TMessage>(
+                    _loggerFactory.CreateLogger<RabbitMqPullingSubscriber<TMessage>>(),
                     _settings)
                 .UseMiddleware(
                     new DeadQueueMiddleware<TMessage>(_loggerFactory.CreateLogger<DeadQueueMiddleware<TMessage>>()))
@@ -94,19 +94,19 @@ namespace Lykke.RabbitMqBroker.Subscriber
                 .Subscribe(ProcessMessageAsync)
                 .CreateDefaultBinding();
             if (_sendTelemetry)
-                _subscriber = _subscriber.UseMiddleware(new TelemetryMiddleware<TMessage>());
-            _subscriber.Start();
+                _pullingSubscriber = _pullingSubscriber.UseMiddleware(new TelemetryMiddleware<TMessage>());
+            _pullingSubscriber.Start();
         }
 
         /// <inheritdoc cref="IStartStop.Stop"/>
         public void Stop()
         {
-            var subscriber = _subscriber;
+            var subscriber = _pullingSubscriber;
 
-            if (_subscriber == null)
+            if (_pullingSubscriber == null)
                 return;
 
-            _subscriber = null;
+            _pullingSubscriber = null;
 
             subscriber.Stop();
             subscriber.Dispose();

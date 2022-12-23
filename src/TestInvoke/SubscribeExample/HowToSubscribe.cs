@@ -12,13 +12,13 @@ namespace TestInvoke.SubscribeExample
 {
     public static class HowToSubscribe
     {
-        private static RabbitMqSubscriber<string> _connector;
+        private static RabbitMqPullingSubscriber<string> _connector;
 
         public static void Example(RabbitMqSubscriptionSettings settings)
         {
             _connector =
-                new RabbitMqSubscriber<string>(
-                    new NullLogger<RabbitMqSubscriber<string>>(),
+                new RabbitMqPullingSubscriber<string>(
+                    new NullLogger<RabbitMqPullingSubscriber<string>>(),
                     settings)
                     .UseMiddleware(new ExceptionSwallowMiddleware<string>(new NullLogger<ExceptionSwallowMiddleware<string>>()))
                     .SetMessageDeserializer(new TestMessageDeserializer())

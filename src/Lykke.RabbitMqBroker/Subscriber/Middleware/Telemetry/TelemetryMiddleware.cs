@@ -20,7 +20,7 @@ namespace Lykke.RabbitMqBroker.Subscriber.Middleware.Telemetry
             if (_queueName == null)
                 _queueName = context.Settings.GetQueueOrExchangeName();
 
-            var telemetryOperation = InitTelemetryOperation(_queueName, context.BasicDeliverEventArgs.Body.Length);
+            var telemetryOperation = InitTelemetryOperation(_queueName, context.Body.Length);
             try
             {
                 return context.InvokeNextAsync();

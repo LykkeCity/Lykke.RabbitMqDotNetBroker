@@ -27,7 +27,7 @@ namespace Lykke.RabbitMqBroker.Tests
         protected const string ExchangeName = "TestClusterExchange";
         protected const string QueueName = "TestClusterQueue";
 
-        private RabbitMqSubscriber<string> _subscriber;
+        private RabbitMqPullingSubscriber<string> _pullingSubscriber;
         private int _messagesCount;
 
         [Test]
@@ -41,8 +41,8 @@ namespace Lykke.RabbitMqBroker.Tests
                 IsDurable = true,
                 QueueName = QueueName
             };
-            _subscriber = new RabbitMqSubscriber<string>(
-                    new NullLogger<RabbitMqSubscriber<string>>(),
+            _pullingSubscriber = new RabbitMqPullingSubscriber<string>(
+                    new NullLogger<RabbitMqPullingSubscriber<string>>(),
                     settings)
                 .UseMiddleware(new InMemoryDeduplicationMiddleware<string>())
                 .UseMiddleware(new ExceptionSwallowMiddleware<string>(new NullLogger<ExceptionSwallowMiddleware<string>>()))
@@ -56,8 +56,8 @@ namespace Lykke.RabbitMqBroker.Tests
                 _messagesCount++;
                 return Task.CompletedTask;
             });
-            _subscriber.Subscribe(handler);
-            _subscriber.Start();
+            _pullingSubscriber.Subscribe(handler);
+            _pullingSubscriber.Start();
 
             // act
             {
@@ -98,8 +98,8 @@ namespace Lykke.RabbitMqBroker.Tests
                 IsDurable = true,
                 QueueName = QueueName
             };
-            _subscriber = new RabbitMqSubscriber<string>(
-                    new NullLogger<RabbitMqSubscriber<string>>(), 
+            _pullingSubscriber = new RabbitMqPullingSubscriber<string>(
+                    new NullLogger<RabbitMqPullingSubscriber<string>>(), 
                     settings)
                 .UseMiddleware(new InMemoryDeduplicationMiddleware<string>())
                 .UseMiddleware(new ExceptionSwallowMiddleware<string>(new NullLogger<ExceptionSwallowMiddleware<string>>()))
@@ -113,8 +113,8 @@ namespace Lykke.RabbitMqBroker.Tests
                 _messagesCount++;
                 return Task.CompletedTask;
             });
-            _subscriber.Subscribe(handler);
-            _subscriber.Start();
+            _pullingSubscriber.Subscribe(handler);
+            _pullingSubscriber.Start();
 
             // act
             {
@@ -137,7 +137,7 @@ namespace Lykke.RabbitMqBroker.Tests
         [TearDown]
         public void TearDown()
         {
-            _subscriber.Stop();
+            _pullingSubscriber.Stop();
         }
     }
 }
