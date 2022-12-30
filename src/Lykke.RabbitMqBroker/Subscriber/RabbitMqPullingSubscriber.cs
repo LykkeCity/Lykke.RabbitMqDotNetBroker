@@ -184,13 +184,16 @@ namespace Lykke.RabbitMqBroker.Subscriber
 
                 var queueName = _messageReadStrategy.Configure(settings, channel);
 
+                var consumer = new DefaultBasicConsumer(channel);
+                var tag = channel.BasicConsume(queueName, false, consumer);
+
                 while (!IsStopped())
                 {
                     if (!connection.IsOpen)
                     {
                         throw new RabbitMqBrokerException($"{settings.GetSubscriberName()}: connection to {connection.Endpoint} is closed");
                     }
-
+                    
                     var result = channel.BasicGet(queueName, false);
 
                     _reconnectionsInARowCount = 0;
@@ -200,6 +203,8 @@ namespace Lykke.RabbitMqBroker.Subscriber
                         MessageReceived(channel, result);
                     }
                 }
+                
+                channel.BasicCancel(tag);
             }
         }
 
