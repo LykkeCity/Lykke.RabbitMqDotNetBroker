@@ -95,16 +95,18 @@ namespace Lykke.RabbitMqBroker.Restored
             IBasicProperties properties,
             ReadOnlyMemory<byte> body)
         {
-            var eventArgs = new BasicDeliverEventArgs
-            {
-                ConsumerTag = consumerTag,
-                DeliveryTag = deliveryTag,
-                Redelivered = redelivered,
-                Exchange = exchange,
-                RoutingKey = routingKey,
-                BasicProperties = properties,
-                Body = body
-            };
+            // make a copy of the body, as it can be released at any time
+            var bodyCopy = new byte[body.Length];
+            Buffer.BlockCopy(body.ToArray(), 0, bodyCopy, 0, body.Length);
+            
+            var eventArgs = new BasicDeliverEventArgs(consumerTag,
+                deliveryTag,
+                redelivered,
+                exchange,
+                routingKey,
+                properties,
+                new ReadOnlyMemory<byte>(bodyCopy));
+            
             Queue.Enqueue(eventArgs);
         }
 
