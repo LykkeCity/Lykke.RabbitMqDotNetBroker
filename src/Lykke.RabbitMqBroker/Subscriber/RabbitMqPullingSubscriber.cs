@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using System.Threading;
 using Autofac;
 using JetBrains.Annotations;
+using Lykke.RabbitMqBroker.Restored;
 using Lykke.RabbitMqBroker.Subscriber.Deserializers;
 using Lykke.RabbitMqBroker.Subscriber.MessageReadStrategies;
 using Lykke.RabbitMqBroker.Subscriber.Middleware;
@@ -15,6 +16,7 @@ using Microsoft.Extensions.PlatformAbstractions;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using RabbitMQ.Client;
+using RabbitMQ.Client.Events;
 
 namespace Lykke.RabbitMqBroker.Subscriber
 {
@@ -183,8 +185,8 @@ namespace Lykke.RabbitMqBroker.Subscriber
                     channel.BasicQos(0, _prefetchCount.Value, false);
 
                 var queueName = _messageReadStrategy.Configure(settings, channel);
-
-                var consumer = new DefaultBasicConsumer(channel);
+                
+                var consumer = new QueueingBasicConsumer(channel);
                 var tag = channel.BasicConsume(queueName, false, consumer);
 
                 while (!IsStopped())
@@ -194,13 +196,13 @@ namespace Lykke.RabbitMqBroker.Subscriber
                         throw new RabbitMqBrokerException($"{settings.GetSubscriberName()}: connection to {connection.Endpoint} is closed");
                     }
                     
-                    var result = channel.BasicGet(queueName, false);
+                    var delivered = consumer.Queue.Dequeue(2000, out var eventArgs);
 
                     _reconnectionsInARowCount = 0;
 
-                    if (result != null)
+                    if (delivered)
                     {
-                        MessageReceived(channel, result);
+                        MessageReceived(eventArgs, channel);
                     }
                 }
                 
@@ -208,21 +210,22 @@ namespace Lykke.RabbitMqBroker.Subscriber
             }
         }
 
-        private void MessageReceived(IModel channel, BasicGetResult result)
+        private void MessageReceived(BasicDeliverEventArgs basicDeliverEventArgs, IModel channel)
         {
-            var ma = new MessageAcceptor(channel, result.DeliveryTag);
+            var tag = basicDeliverEventArgs.DeliveryTag;
+            var ma = new MessageAcceptor(channel, tag);
 
-            _readHeadersActions.ForEach(x => x(result.BasicProperties?.Headers));
+            _readHeadersActions.ForEach(x => x(basicDeliverEventArgs.BasicProperties?.Headers));
             
             try
             {
-                var model = _messageDeserializer.Deserialize(result.Body.ToArray());
+                var model = _messageDeserializer.Deserialize(basicDeliverEventArgs.Body.ToArray());
 
                 try
                 {
                     _middlewareQueue.RunMiddlewaresAsync(
-                            result.Body,
-                            result.BasicProperties,
+                            basicDeliverEventArgs.Body,
+                            basicDeliverEventArgs.BasicProperties,
                             model,
                             ma,
                             _cancellationTokenSource.Token)
