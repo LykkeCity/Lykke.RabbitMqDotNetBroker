@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading;
 using JetBrains.Annotations;
+using Lykke.RabbitMqBroker.Logging;
 using Lykke.RabbitMqBroker.Publisher;
 using Lykke.RabbitMqBroker.Publisher.Serializers;
 using NUnit.Framework;
@@ -32,6 +33,8 @@ namespace Lykke.RabbitMqBroker.Tests
             {
                 return Encoding.UTF8.GetBytes(model);
             }
+
+            public SerializationFormat SerializationFormat { get; } = SerializationFormat.Unknown;
         }
 
         [SetUp]

@@ -3,6 +3,7 @@
 
 using System.Text;
 using JetBrains.Annotations;
+using Lykke.RabbitMqBroker.Logging;
 using Newtonsoft.Json;
 
 namespace Lykke.RabbitMqBroker.Publisher.Serializers
@@ -43,5 +44,7 @@ namespace Lykke.RabbitMqBroker.Publisher.Serializers
 
             return _encoding.GetBytes(serialized);
         }
+
+        public SerializationFormat SerializationFormat { get; } = SerializationFormat.Json;
     }
 }

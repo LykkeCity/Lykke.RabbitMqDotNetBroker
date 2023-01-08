@@ -7,6 +7,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
+using Lykke.RabbitMqBroker.Logging;
 using Lykke.RabbitMqBroker.Publisher.DeferredMessages;
 using Lykke.RabbitMqBroker.Publisher.Serializers;
 using Lykke.RabbitMqBroker.Publisher.Strategies;
@@ -38,6 +39,8 @@ namespace Lykke.RabbitMqBroker.Publisher
 
         private IRawMessagePublisher _rawPublisher;
         private IPublisherBuffer _bufferOverriding;
+        private readonly OutgoingMessageBuilder _outgoingMessageBuilder;
+        private readonly OutgoingMessageLogger _outgoingMessageLogger;
 
         public string Name => _settings.GetPublisherName();
 
@@ -53,6 +56,10 @@ namespace Lykke.RabbitMqBroker.Publisher
             _submitTelemetry = submitTelemetry;
 
             _log = loggerFactory.CreateLogger<RabbitMqPublisher<TMessageModel>>();
+
+            _outgoingMessageBuilder = new OutgoingMessageBuilder(_settings);
+            _outgoingMessageLogger =
+                new OutgoingMessageLogger(loggerFactory.CreateLogger<RabbitMqPublisher<TMessageModel>>());
         }
 
         #region Configurator
@@ -155,6 +162,7 @@ namespace Lykke.RabbitMqBroker.Publisher
             ThrowIfStarted();
 
             _serializer = serializer;
+            _outgoingMessageBuilder.SetSerializationFormat(_serializer.SerializationFormat);
             return this;
         }
 
@@ -235,8 +243,12 @@ namespace Lykke.RabbitMqBroker.Publisher
             }
 
             var body = _serializer.Serialize(message);
+            var headers = GetMessageHeaders();
 
-            return _deferredMessagesManager.DeferAsync(new RawMessage(body, routingKey, GetMessageHeaders()), deliverAt);
+            var loggedMessage = _outgoingMessageBuilder.Create<TMessageModel>(body, headers);
+            _outgoingMessageLogger.Log(loggedMessage);
+
+            return _deferredMessagesManager.DeferAsync(new RawMessage(body, routingKey, headers), deliverAt);
         }
 
         /// <summary>
@@ -257,8 +269,11 @@ namespace Lykke.RabbitMqBroker.Publisher
             }
 
             var body = _serializer.Serialize(message);
+            var headers = GetMessageHeaders();
+            var loggedMessage = _outgoingMessageBuilder.Create<TMessageModel>(body, headers);
+            _outgoingMessageLogger.Log(loggedMessage);
 
-            _rawPublisher.Produce(new RawMessage(body, routingKey, GetMessageHeaders()));
+            _rawPublisher.Produce(new RawMessage(body, routingKey, headers));
 
             return Task.CompletedTask;
         }

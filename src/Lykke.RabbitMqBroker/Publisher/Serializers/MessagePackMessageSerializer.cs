@@ -3,6 +3,7 @@
 
 using System.IO;
 using JetBrains.Annotations;
+using Lykke.RabbitMqBroker.Logging;
 using MessagePack;
 
 namespace Lykke.RabbitMqBroker.Publisher.Serializers
@@ -31,5 +32,7 @@ namespace Lykke.RabbitMqBroker.Publisher.Serializers
                 return stream.ToArray();
             }
         }
+
+        public SerializationFormat SerializationFormat { get; } = SerializationFormat.Messagepack;
     }
 }
